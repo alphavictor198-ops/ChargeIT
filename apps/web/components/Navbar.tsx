@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Zap, LogOut, User } from "lucide-react";
@@ -15,7 +16,9 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout, isAuthenticated } = useAuthStore();
-  const loggedIn = isAuthenticated();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const loggedIn = mounted && isAuthenticated();
 
   // Hide navbar on auth pages
   if (pathname?.startsWith("/auth")) return null;
