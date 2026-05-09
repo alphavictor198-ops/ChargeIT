@@ -222,25 +222,19 @@ export interface RoutePlan {
 
 // Major Indian highway charging hubs with operator names
 export const CHARGING_HUBS: { city: string; operator: string; lat: number; lng: number; power_kw: number; wait_min: number }[] = [
+  // North India
+  { city: "Delhi",        operator: "Tata Power",   lat: 28.6139, lng: 77.2090, power_kw: 150, wait_min: 15 },
   { city: "Mathura",      operator: "Tata Power",   lat: 27.4924, lng: 77.6737, power_kw: 50,  wait_min: 5  },
   { city: "Agra",         operator: "Statiq",       lat: 27.1767, lng: 78.0081, power_kw: 60,  wait_min: 10 },
   { city: "Gwalior",      operator: "ChargeZone",   lat: 26.2183, lng: 78.1828, power_kw: 50,  wait_min: 8  },
   { city: "Jhansi",       operator: "BPCL",         lat: 25.4484, lng: 78.5685, power_kw: 50,  wait_min: 5  },
-  { city: "Bhopal",       operator: "Tata Power",   lat: 23.2599, lng: 77.4126, power_kw: 60,  wait_min: 12 },
-  { city: "Indore",       operator: "Statiq",       lat: 22.7196, lng: 75.8577, power_kw: 60,  wait_min: 10 },
-  { city: "Nagpur",       operator: "Tata Power",   lat: 21.1458, lng: 79.0882, power_kw: 60,  wait_min: 15 },
-  { city: "Pune",         operator: "Tata Power",   lat: 18.5204, lng: 73.8567, power_kw: 100, wait_min: 8  },
-  { city: "Nashik",       operator: "ChargeZone",   lat: 19.9975, lng: 73.7898, power_kw: 50,  wait_min: 10 },
-  { city: "Surat",        operator: "Jio-bp",       lat: 21.1702, lng: 72.8311, power_kw: 60,  wait_min: 10 },
-  { city: "Vadodara",     operator: "Statiq",       lat: 22.3119, lng: 73.1723, power_kw: 60,  wait_min: 8  },
-  { city: "Ahmedabad",    operator: "Tata Power",   lat: 23.0225, lng: 72.5714, power_kw: 100, wait_min: 12 },
-  { city: "Rajkot",       operator: "HPCL",         lat: 22.3039, lng: 70.8022, power_kw: 50,  wait_min: 8  },
   { city: "Jaipur",       operator: "Statiq",       lat: 26.9124, lng: 75.7873, power_kw: 60,  wait_min: 10 },
   { city: "Ajmer",        operator: "BPCL",         lat: 26.4499, lng: 74.6399, power_kw: 50,  wait_min: 8  },
   { city: "Jodhpur",      operator: "Tata Power",   lat: 26.2389, lng: 73.0243, power_kw: 50,  wait_min: 10 },
-  { city: "Ludhiana",     operator: "Statiq",       lat: 30.9010, lng: 75.8573, power_kw: 60,  wait_min: 10 },
-  { city: "Ambala",       operator: "ChargeZone",   lat: 30.3782, lng: 76.7767, power_kw: 50,  wait_min: 5  },
+  { city: "Udaipur",      operator: "ChargeZone",   lat: 24.5854, lng: 73.7125, power_kw: 50,  wait_min: 8  },
   { city: "Chandigarh",   operator: "Tata Power",   lat: 30.7333, lng: 76.7794, power_kw: 60,  wait_min: 8  },
+  { city: "Ambala",       operator: "ChargeZone",   lat: 30.3782, lng: 76.7767, power_kw: 50,  wait_min: 5  },
+  { city: "Ludhiana",     operator: "Statiq",       lat: 30.9010, lng: 75.8573, power_kw: 60,  wait_min: 10 },
   { city: "Amritsar",     operator: "HPCL",         lat: 31.6340, lng: 74.8723, power_kw: 50,  wait_min: 10 },
   { city: "Haridwar",     operator: "IOCL",         lat: 29.9457, lng: 78.1642, power_kw: 50,  wait_min: 8  },
   { city: "Dehradun",     operator: "Tata Power",   lat: 30.3165, lng: 78.0322, power_kw: 50,  wait_min: 10 },
@@ -248,25 +242,63 @@ export const CHARGING_HUBS: { city: string; operator: string; lat: number; lng: 
   { city: "Kanpur",       operator: "ChargeZone",   lat: 26.4499, lng: 80.3319, power_kw: 50,  wait_min: 8  },
   { city: "Varanasi",     operator: "Tata Power",   lat: 25.3176, lng: 82.9739, power_kw: 50,  wait_min: 10 },
   { city: "Patna",        operator: "BPCL",         lat: 25.5941, lng: 85.1376, power_kw: 50,  wait_min: 12 },
+  // Central India — fill Bhopal-Nagpur-Hyderabad gaps
+  { city: "Indore",       operator: "Statiq",       lat: 22.7196, lng: 75.8577, power_kw: 60,  wait_min: 10 },
+  { city: "Dewas",        operator: "Tata Power",   lat: 22.9623, lng: 76.0508, power_kw: 50,  wait_min: 5  },
+  { city: "Bhopal",       operator: "Tata Power",   lat: 23.2599, lng: 77.4126, power_kw: 60,  wait_min: 12 },
+  { city: "Hoshangabad",  operator: "IOCL",         lat: 22.7547, lng: 77.7340, power_kw: 50,  wait_min: 8  },
+  { city: "Betul",        operator: "BPCL",         lat: 21.9110, lng: 77.8970, power_kw: 50,  wait_min: 8  },
+  { city: "Amravati",     operator: "ChargeZone",   lat: 20.9374, lng: 77.7796, power_kw: 50,  wait_min: 10 },
+  { city: "Nagpur",       operator: "Tata Power",   lat: 21.1458, lng: 79.0882, power_kw: 60,  wait_min: 15 },
+  { city: "Wardha",       operator: "Statiq",       lat: 20.7453, lng: 78.6022, power_kw: 50,  wait_min: 8  },
+  { city: "Adilabad",     operator: "HPCL",         lat: 19.6640, lng: 78.5320, power_kw: 50,  wait_min: 8  },
+  { city: "Nirmal",       operator: "IOCL",         lat: 19.0960, lng: 78.3440, power_kw: 50,  wait_min: 5  },
+  { city: "Nizamabad",    operator: "Statiq",       lat: 18.6725, lng: 78.0940, power_kw: 50,  wait_min: 8  },
+  { city: "Hyderabad",    operator: "Statiq",       lat: 17.3850, lng: 78.4867, power_kw: 150, wait_min: 12 },
+  // Hyderabad to Chennai corridor
+  { city: "Nalgonda",     operator: "Tata Power",   lat: 17.0575, lng: 79.2670, power_kw: 50,  wait_min: 5  },
+  { city: "Kurnool",      operator: "BPCL",         lat: 15.8281, lng: 78.0373, power_kw: 50,  wait_min: 8  },
+  { city: "Anantapur",    operator: "HPCL",         lat: 14.6819, lng: 77.6006, power_kw: 50,  wait_min: 8  },
+  { city: "Kadapa",       operator: "Statiq",       lat: 14.4674, lng: 78.8241, power_kw: 50,  wait_min: 8  },
+  { city: "Tirupati",     operator: "Tata Power",   lat: 13.6288, lng: 79.4192, power_kw: 60,  wait_min: 10 },
+  { city: "Vellore",      operator: "ChargeZone",   lat: 12.9165, lng: 79.1325, power_kw: 50,  wait_min: 8  },
+  { city: "Chennai",      operator: "Tata Power",   lat: 13.0827, lng: 80.2707, power_kw: 100, wait_min: 15 },
+  // West India
+  { city: "Mumbai",       operator: "Tata Power",   lat: 19.0760, lng: 72.8777, power_kw: 150, wait_min: 15 },
+  { city: "Pune",         operator: "Tata Power",   lat: 18.5204, lng: 73.8567, power_kw: 100, wait_min: 8  },
+  { city: "Nashik",       operator: "ChargeZone",   lat: 19.9975, lng: 73.7898, power_kw: 50,  wait_min: 10 },
+  { city: "Aurangabad",   operator: "Jio-bp",       lat: 19.8762, lng: 75.3433, power_kw: 60,  wait_min: 10 },
+  { city: "Surat",        operator: "Jio-bp",       lat: 21.1702, lng: 72.8311, power_kw: 60,  wait_min: 10 },
+  { city: "Vadodara",     operator: "Statiq",       lat: 22.3119, lng: 73.1723, power_kw: 60,  wait_min: 8  },
+  { city: "Ahmedabad",    operator: "Tata Power",   lat: 23.0225, lng: 72.5714, power_kw: 100, wait_min: 12 },
+  { city: "Rajkot",       operator: "HPCL",         lat: 22.3039, lng: 70.8022, power_kw: 50,  wait_min: 8  },
+  // East India
   { city: "Ranchi",       operator: "Jio-bp",       lat: 23.3441, lng: 85.3096, power_kw: 50,  wait_min: 10 },
   { city: "Kolkata",      operator: "Tata Power",   lat: 22.5726, lng: 88.3639, power_kw: 100, wait_min: 15 },
   { city: "Bhubaneswar",  operator: "Statiq",       lat: 20.2961, lng: 85.8245, power_kw: 60,  wait_min: 10 },
-  { city: "Visakhapatnam",operator: "ChargeZone",   lat: 17.6868, lng: 83.2185, power_kw: 60,  wait_min: 12 },
-  { city: "Vijayawada",   operator: "Tata Power",   lat: 16.5062, lng: 80.6480, power_kw: 60,  wait_min: 10 },
-  { city: "Chennai",      operator: "Tata Power",   lat: 13.0827, lng: 80.2707, power_kw: 100, wait_min: 15 },
-  { city: "Coimbatore",   operator: "Statiq",       lat: 11.0168, lng: 76.9558, power_kw: 60,  wait_min: 10 },
-  { city: "Madurai",      operator: "BPCL",         lat:  9.9252, lng: 78.1198, power_kw: 50,  wait_min: 10 },
-  { city: "Kochi",        operator: "Tata Power",   lat:  9.9312, lng: 76.2673, power_kw: 60,  wait_min: 10 },
-  { city: "Bangalore",    operator: "Tata Power",   lat: 12.9716, lng: 77.5946, power_kw: 150, wait_min: 10 },
-  { city: "Mysore",       operator: "Ather Grid",   lat: 12.2958, lng: 76.6394, power_kw: 50,  wait_min: 8  },
-  { city: "Hyderabad",    operator: "Statiq",       lat: 17.3850, lng: 78.4867, power_kw: 150, wait_min: 12 },
-  { city: "Mumbai",       operator: "Tata Power",   lat: 19.0760, lng: 72.8777, power_kw: 150, wait_min: 15 },
-  { city: "Delhi",        operator: "Tata Power",   lat: 28.6139, lng: 77.2090, power_kw: 150, wait_min: 15 },
-  { city: "Udaipur",      operator: "ChargeZone",   lat: 24.5854, lng: 73.7125, power_kw: 50,  wait_min: 8  },
-  { city: "Aurangabad",   operator: "Jio-bp",       lat: 19.8762, lng: 75.3433, power_kw: 60,  wait_min: 10 },
   { city: "Raipur",       operator: "Tata Power",   lat: 21.2514, lng: 81.6296, power_kw: 50,  wait_min: 10 },
   { city: "Guwahati",     operator: "IOCL",         lat: 26.1445, lng: 91.7362, power_kw: 50,  wait_min: 12 },
+  // East coast
+  { city: "Visakhapatnam",operator: "ChargeZone",   lat: 17.6868, lng: 83.2185, power_kw: 60,  wait_min: 12 },
+  { city: "Vijayawada",   operator: "Tata Power",   lat: 16.5062, lng: 80.6480, power_kw: 60,  wait_min: 10 },
+  // South India
+  { city: "Bangalore",    operator: "Tata Power",   lat: 12.9716, lng: 77.5946, power_kw: 150, wait_min: 10 },
+  { city: "Mysore",       operator: "Ather Grid",   lat: 12.2958, lng: 76.6394, power_kw: 50,  wait_min: 8  },
+  { city: "Coimbatore",   operator: "Statiq",       lat: 11.0168, lng: 76.9558, power_kw: 60,  wait_min: 10 },
+  { city: "Salem",        operator: "Tata Power",   lat: 11.6643, lng: 78.1460, power_kw: 50,  wait_min: 8  },
+  { city: "Madurai",      operator: "BPCL",         lat:  9.9252, lng: 78.1198, power_kw: 50,  wait_min: 10 },
+  { city: "Kochi",        operator: "Tata Power",   lat:  9.9312, lng: 76.2673, power_kw: 60,  wait_min: 10 },
   { city: "Thiruvananthapuram", operator: "Tata Power", lat: 8.5241, lng: 76.9366, power_kw: 60, wait_min: 10 },
+  // Pune-Bangalore corridor
+  { city: "Kolhapur",     operator: "Jio-bp",       lat: 16.7050, lng: 74.2433, power_kw: 50,  wait_min: 8  },
+  { city: "Belgaum",      operator: "Tata Power",   lat: 15.8497, lng: 74.4977, power_kw: 50,  wait_min: 8  },
+  { city: "Hubli",        operator: "ChargeZone",   lat: 15.3647, lng: 75.1240, power_kw: 50,  wait_min: 8  },
+  { city: "Davangere",    operator: "BPCL",         lat: 14.4644, lng: 75.9218, power_kw: 50,  wait_min: 8  },
+  { city: "Tumkur",       operator: "Statiq",       lat: 13.3379, lng: 77.1173, power_kw: 50,  wait_min: 5  },
+  // Solapur corridor (Pune-Hyderabad)
+  { city: "Solapur",      operator: "IOCL",         lat: 17.6599, lng: 75.9064, power_kw: 50,  wait_min: 8  },
+  // Bangalore-Chennai corridor
+  { city: "Krishnagiri",  operator: "Tata Power",   lat: 12.5186, lng: 78.2137, power_kw: 50,  wait_min: 5  },
 ];
 
 export function planRoute(
@@ -299,15 +331,15 @@ export function planRoute(
     };
   }
 
-  // Filter hubs in route corridor
+  // Wide corridor — prefer on-route hubs but don't exclude reachable ones
   const corridor = CHARGING_HUBS.filter(hub => {
     const dToHub = haversineKm(originLat, originLng, hub.lat, hub.lng);
     const dHubToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
     const detour = (dToHub + dHubToDest) / Math.max(crowKm, 1);
-    return detour < 1.35 && dToHub < crowKm * 1.05 && dHubToDest < crowKm * 0.95;
+    return detour < 1.6 && dHubToDest < crowKm * 0.98;
   });
 
-  // Greedy forward search: always pick the hub that makes maximum forward progress
+  // Range-first greedy search: battery range decides next stop
   const stops: ChargingStopPlan[] = [];
   let curLat = originLat, curLng = originLng;
   let curSoc = startSoc;
@@ -315,37 +347,47 @@ export function planRoute(
   let totalEnergy = 0;
   const usedHubs = new Set<string>();
 
-  for (let iter = 0; iter < 15; iter++) {
+  for (let iter = 0; iter < 20; iter++) {
     // Can we reach destination directly?
     const remRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
     const remSeg = predictTripSegment(spec, remRoad, curSoc, speedKmh, tempCelsius);
     if (remSeg.arrival_soc >= minArrivalSoc) break;
 
-    // Compute current drivable range (km) with available battery
-    const usableKwh = spec.battery_kwh * ((curSoc - 5) / 100); // reserve 5% minimum
+    // Compute drivable range from current battery
+    const usableKwh = spec.battery_kwh * ((curSoc - 5) / 100);
     const rangeKm = (usableKwh * 1000) / spec.efficiency_wh_per_km;
     const curDistToDest = haversineKm(curLat, curLng, destLat, destLng);
 
-    // Find all reachable hubs within actual battery range, making forward progress
-    const candidates = corridor
+    // Step 1: Find reachable hubs from corridor that make forward progress
+    let candidates = corridor
       .filter(hub => {
         if (usedHubs.has(hub.city)) return false;
         const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
-        if (hubDistToDest >= curDistToDest * 0.98) return false; // must make forward progress
+        if (hubDistToDest >= curDistToDest * 0.98) return false;
         const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
-        if (segDist > rangeKm) return false; // beyond battery range
-        const seg = predictTripSegment(spec, segDist, curSoc, speedKmh, tempCelsius);
-        return seg.arrival_soc >= 10; // arrive with safe margin
-      })
-      .sort((a, b) => {
-        // Pick the FURTHEST reachable hub (closest to destination) to minimize total stops
-        const da = haversineKm(a.lat, a.lng, destLat, destLng);
-        const db = haversineKm(b.lat, b.lng, destLat, destLng);
-        return da - db;
+        return segDist <= rangeKm;
       });
 
+    // Step 2: If no corridor hub in range, search ALL hubs (range > shortest path)
     if (candidates.length === 0) {
-      warnings.push("No reachable charging hub found for next leg");
+      candidates = CHARGING_HUBS.filter(hub => {
+        if (usedHubs.has(hub.city)) return false;
+        const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
+        if (hubDistToDest >= curDistToDest * 0.95) return false;
+        const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
+        return segDist <= rangeKm;
+      });
+    }
+
+    // Sort: prefer hub closest to destination (max forward progress)
+    candidates.sort((a, b) => {
+      const da = haversineKm(a.lat, a.lng, destLat, destLng);
+      const db = haversineKm(b.lat, b.lng, destLat, destLng);
+      return da - db;
+    });
+
+    if (candidates.length === 0) {
+      warnings.push("No charging station within battery range — route may be infeasible");
       break;
     }
 
