@@ -339,6 +339,8 @@ export function planRoute(
     return detour < 1.6 && dHubToDest < crowKm * 0.98;
   });
 
+  console.log(`[Route] ${spec.name}: ${crowKm.toFixed(0)}km crow, corridor: ${corridor.length} hubs, SOC: ${startSoc}%`);
+
   // Range-first greedy search: battery range decides next stop
   const stops: ChargingStopPlan[] = [];
   let curLat = originLat, curLng = originLng;
@@ -351,33 +353,50 @@ export function planRoute(
     // Can we reach destination directly?
     const remRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
     const remSeg = predictTripSegment(spec, remRoad, curSoc, speedKmh, tempCelsius);
-    if (remSeg.arrival_soc >= minArrivalSoc) break;
+    if (remSeg.arrival_soc >= minArrivalSoc) {
+      console.log(`[Route] iter ${iter}: can reach dest directly, arrival ${remSeg.arrival_soc}%`);
+      break;
+    }
 
-    // Compute drivable range from current battery
+    // Use effective efficiency for accurate range calc
+    const effWh = effectiveEfficiency(spec, speedKmh, tempCelsius);
     const usableKwh = spec.battery_kwh * ((curSoc - 5) / 100);
-    const rangeKm = (usableKwh * 1000) / spec.efficiency_wh_per_km;
+    const rangeKm = (usableKwh * 1000) / effWh;
     const curDistToDest = haversineKm(curLat, curLng, destLat, destLng);
 
-    // Step 1: Find reachable hubs from corridor that make forward progress
+    console.log(`[Route] iter ${iter}: pos=(${curLat.toFixed(2)},${curLng.toFixed(2)}), SOC=${curSoc}%, range=${rangeKm.toFixed(0)}km, distToDest=${curDistToDest.toFixed(0)}km`);
+
+    // Step 1: Corridor hubs closer to destination (preferred)
     let candidates = corridor
       .filter(hub => {
         if (usedHubs.has(hub.city)) return false;
         const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
-        if (hubDistToDest >= curDistToDest * 0.98) return false;
+        if (hubDistToDest >= curDistToDest - 5) return false; // must be at least 5km closer to dest
         const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
         return segDist <= rangeKm;
       });
 
-    // Step 2: If no corridor hub in range, search ALL hubs (range > shortest path)
+    // Step 2: If no forward corridor hub, try ANY corridor hub within range (may go sideways)
+    if (candidates.length === 0) {
+      candidates = corridor.filter(hub => {
+        if (usedHubs.has(hub.city)) return false;
+        const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
+        return segDist > 5 && segDist <= rangeKm; // skip origin hub (>5km away)
+      });
+      console.log(`[Route] iter ${iter}: sideways corridor: ${candidates.length} (${candidates.map(h=>h.city).join(', ')})`);
+    }
+
+    // Step 3: If still nothing, search ALL hubs within range
     if (candidates.length === 0) {
       candidates = CHARGING_HUBS.filter(hub => {
         if (usedHubs.has(hub.city)) return false;
-        const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
-        if (hubDistToDest >= curDistToDest * 0.95) return false;
         const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
-        return segDist <= rangeKm;
+        return segDist > 5 && segDist <= rangeKm;
       });
+      console.log(`[Route] iter ${iter}: ALL-hub fallback: ${candidates.length} (${candidates.map(h=>h.city).join(', ')})`);
     }
+
+    console.log(`[Route] iter ${iter}: final candidates: ${candidates.length} (${candidates.map(h=>h.city).join(', ')})`);
 
     // Sort: prefer hub closest to destination (max forward progress)
     candidates.sort((a, b) => {
@@ -388,6 +407,7 @@ export function planRoute(
 
     if (candidates.length === 0) {
       warnings.push("No charging station within battery range — route may be infeasible");
+      console.log(`[Route] iter ${iter}: NO CANDIDATES — breaking`);
       break;
     }
 
