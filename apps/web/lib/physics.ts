@@ -321,20 +321,24 @@ export function planRoute(
     const remSeg = predictTripSegment(spec, remRoad, curSoc, speedKmh, tempCelsius);
     if (remSeg.arrival_soc >= minArrivalSoc) break;
 
+    // Compute current drivable range (km) with available battery
+    const usableKwh = spec.battery_kwh * ((curSoc - 5) / 100); // reserve 5% minimum
+    const rangeKm = (usableKwh * 1000) / spec.efficiency_wh_per_km;
     const curDistToDest = haversineKm(curLat, curLng, destLat, destLng);
 
-    // Find all reachable hubs that are closer to destination (forward progress)
+    // Find all reachable hubs within actual battery range, making forward progress
     const candidates = corridor
       .filter(hub => {
         if (usedHubs.has(hub.city)) return false;
         const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
         if (hubDistToDest >= curDistToDest * 0.98) return false; // must make forward progress
         const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
+        if (segDist > rangeKm) return false; // beyond battery range
         const seg = predictTripSegment(spec, segDist, curSoc, speedKmh, tempCelsius);
-        return seg.arrival_soc >= 5; // must be reachable
+        return seg.arrival_soc >= 10; // arrive with safe margin
       })
       .sort((a, b) => {
-        // Pick hub closest to destination (maximum forward progress)
+        // Pick the FURTHEST reachable hub (closest to destination) to minimize total stops
         const da = haversineKm(a.lat, a.lng, destLat, destLng);
         const db = haversineKm(b.lat, b.lng, destLat, destLng);
         return da - db;
