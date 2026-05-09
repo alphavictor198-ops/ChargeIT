@@ -1,0 +1,240 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 162 100% 50%;
+    --primary-foreground: 222 47% 5%;
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 199 89% 60%;
+    --accent-foreground: 222 47% 5%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 33% 15%;
+    --input: 217 33% 15%;
+    --ring: 162 100% 50%;
+    --radius: 0.75rem;
+
+    /* GatiCharge brand colors */
+    --neon-green: #00ff9d;
+    --neon-blue: #00d4ff;
+    --neon-purple: #8b5cf6;
+    --dark-bg: #060b18;
+    --dark-card: #0d1526;
+    --dark-border: #1a2744;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--dark-bg);
+    color: hsl(var(--foreground));
+    font-family: var(--font-inter), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--dark-bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--dark-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-green);
+  }
+}
+
+/* ─── Utility Classes ─────────────────────────────────────────────── */
+
+.glass-card {
+  background: rgba(13, 21, 38, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(26, 39, 68, 0.8);
+  border-radius: 16px;
+}
+
+.neon-border {
+  border: 1px solid rgba(0, 255, 157, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 157, 0.1);
+}
+
+.neon-glow {
+  box-shadow: 0 0 30px rgba(0, 255, 157, 0.3), 0 0 60px rgba(0, 255, 157, 0.1);
+}
+
+.neon-text {
+  color: var(--neon-green);
+  text-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-gradient {
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(0, 255, 157, 0.08) 0%,
+    rgba(0, 212, 255, 0.04) 30%,
+    transparent 70%
+  );
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(13, 21, 38, 0.9), rgba(26, 39, 68, 0.5));
+  border: 1px solid rgba(0, 255, 157, 0.15);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(0, 255, 157, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 255, 157, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ff9d, #00d4ff);
+  color: #060b18;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 12px 28px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(0, 255, 157, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(13, 21, 38, 0.8);
+  color: var(--neon-green);
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 12px 28px;
+  border: 1px solid rgba(0, 255, 157, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 255, 157, 0.1);
+  border-color: var(--neon-green);
+}
+
+/* Station marker pulse animation */
+@keyframes pulse-neon {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 255, 157, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0); }
+}
+
+.marker-pulse {
+  animation: pulse-neon 2s infinite;
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(26, 39, 68, 0.3) 0%,
+    rgba(0, 255, 157, 0.1) 50%,
+    rgba(26, 39, 68, 0.3) 100%
+  );
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Charging animation */
+@keyframes charge-flow {
+  0% { transform: translateY(100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+
+.charge-anim {
+  animation: charge-flow 1.5s ease-in-out infinite;
+}
+
+/* Map container */
+.leaflet-container {
+  background: #0d1526 !important;
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* Custom Leaflet popup */
+.leaflet-popup-content-wrapper {
+  background: rgba(13, 21, 38, 0.95) !important;
+  border: 1px solid rgba(0, 255, 157, 0.3) !important;
+  border-radius: 12px !important;
+  color: #e2e8f0 !important;
+  backdrop-filter: blur(20px);
+}
+
+.leaflet-popup-tip {
+  background: rgba(13, 21, 38, 0.95) !important;
+}
+
+/* Gradient separator */
+.gradient-sep {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 157, 0.3), transparent);
+}
+
+/* Trust score colors */
+.trust-high { color: #00ff9d; }
+.trust-mid  { color: #fbbf24; }
+.trust-low  { color: #ef4444; }
+
+/* Input styles */
+input, select, textarea {
+  background: rgba(13, 21, 38, 0.8) !important;
+  border: 1px solid rgba(26, 39, 68, 0.8) !important;
+  color: #e2e8f0 !important;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: rgba(0, 255, 157, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 157, 0.1);
+}

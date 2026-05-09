@@ -1,0 +1,147 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: gaticharge_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gaticharge
+      POSTGRES_USER: gaticharge
+      POSTGRES_PASSWORD: gaticharge_secure_pass_2025
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gaticharge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ───────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: gaticharge_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ─── Backend (FastAPI) ───────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gaticharge_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://gaticharge:gaticharge_secure_pass_2025@postgres:5432/gaticharge
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_in_production_minimum_32_chars}
+      GOOGLE_MAPS_KEY: ${GOOGLE_MAPS_KEY:-}
+      OPENWEATHER_KEY: ${OPENWEATHER_KEY:-}
+      OPENCHARGEMAP_KEY: ${OPENCHARGEMAP_KEY:-}
+      DEBUG: "false"
+      ENVIRONMENT: production
+      ALLOWED_ORIGINS: http://localhost:3000,http://frontend:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./backend:/app
+
+  # ─── Celery Worker ────────────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gaticharge_celery
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4 -Q sync,analytics,realtime
+    environment:
+      DATABASE_URL: postgresql://gaticharge:gaticharge_secure_pass_2025@postgres:5432/gaticharge
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_in_production_minimum_32_chars}
+      OPENCHARGEMAP_KEY: ${OPENCHARGEMAP_KEY:-}
+    depends_on:
+      - backend
+      - redis
+
+  # ─── Celery Beat (Scheduler) ──────────────────────────────────
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gaticharge_celery_beat
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://gaticharge:gaticharge_secure_pass_2025@postgres:5432/gaticharge
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_in_production_minimum_32_chars}
+    depends_on:
+      - celery_worker
+
+  # ─── Frontend (Next.js) ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: gaticharge_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  # ─── Nginx (Reverse Proxy) ────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: gaticharge_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: gaticharge_network
