@@ -233,7 +233,7 @@ export default function VehicleConnectPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6" style={{ background: "var(--dark-bg)" }}>
+    <div className="min-h-screen pt-16 p-4 md:px-6 md:pb-6" style={{ background: "var(--dark-bg)" }}>
       <div className="max-w-5xl mx-auto">
 
         {/* Header */}

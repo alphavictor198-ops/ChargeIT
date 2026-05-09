@@ -125,20 +125,11 @@ export default function StationsPage() {
   const srcInfo    = SOURCE_LABELS[source];
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: "var(--dark-bg)" }}>
+    <div className="flex flex-col h-screen pt-14" style={{ background: "var(--dark-bg)" }}>
 
       {/* ── Top bar ────────────────────────────────────────── */}
       <div className="glass-card border-b border-[#1a2744] rounded-none z-40 shrink-0">
-        <div className="px-4 h-14 flex items-center gap-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00ff9d] to-[#00d4ff] flex items-center justify-center">
-              <Zap className="w-4 h-4 text-[#060b18]" />
-            </div>
-            <span className="font-bold gradient-text hidden sm:block">GatiCharge</span>
-          </div>
-
-          <div className="h-5 w-px bg-[#1a2744] mx-1 hidden sm:block" />
-
+        <div className="px-4 h-12 flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-sm text-slate-400">
             <MapPin className="w-3.5 h-3.5 text-[#00ff9d]" />
             <span className="hidden sm:block">{cityName}</span>

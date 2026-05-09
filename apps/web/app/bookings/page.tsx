@@ -124,7 +124,7 @@ export default function BookingsPage() {
   const bookings = data || demoBookings;
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "var(--dark-bg)" }}>
+    <div className="min-h-screen pt-20 px-6 pb-6" style={{ background: "var(--dark-bg)" }}>
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

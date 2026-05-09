@@ -299,39 +299,60 @@ export function planRoute(
     };
   }
 
-  // Filter hubs in route corridor (tight = shortest route)
+  // Filter hubs in route corridor
   const corridor = CHARGING_HUBS.filter(hub => {
     const dToHub = haversineKm(originLat, originLng, hub.lat, hub.lng);
     const dHubToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
     const detour = (dToHub + dHubToDest) / Math.max(crowKm, 1);
-    return detour < 1.35 && dToHub < crowKm * 1.05;
+    return detour < 1.35 && dToHub < crowKm * 1.05 && dHubToDest < crowKm * 0.95;
   });
 
-  corridor.sort((a, b) => {
-    const da = haversineKm(originLat, originLng, a.lat, a.lng);
-    const db = haversineKm(originLat, originLng, b.lat, b.lng);
-    return da - db;
-  });
-
+  // Greedy forward search: always pick the hub that makes maximum forward progress
   const stops: ChargingStopPlan[] = [];
   let curLat = originLat, curLng = originLng;
   let curSoc = startSoc;
   let totalTime = 0;
   let totalEnergy = 0;
+  const usedHubs = new Set<string>();
 
-  for (const hub of corridor) {
-    if (curSoc >= minArrivalSoc + 10) {
-      // Check if we can reach destination from here
-      const remRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
-      const remSeg = predictTripSegment(spec, remRoad, curSoc, speedKmh, tempCelsius);
-      if (remSeg.arrival_soc >= minArrivalSoc) break; // can reach dest
+  for (let iter = 0; iter < 15; iter++) {
+    // Can we reach destination directly?
+    const remRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
+    const remSeg = predictTripSegment(spec, remRoad, curSoc, speedKmh, tempCelsius);
+    if (remSeg.arrival_soc >= minArrivalSoc) break;
+
+    const curDistToDest = haversineKm(curLat, curLng, destLat, destLng);
+
+    // Find all reachable hubs that are closer to destination (forward progress)
+    const candidates = corridor
+      .filter(hub => {
+        if (usedHubs.has(hub.city)) return false;
+        const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
+        if (hubDistToDest >= curDistToDest * 0.98) return false; // must make forward progress
+        const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
+        const seg = predictTripSegment(spec, segDist, curSoc, speedKmh, tempCelsius);
+        return seg.arrival_soc >= 5; // must be reachable
+      })
+      .sort((a, b) => {
+        // Pick hub closest to destination (maximum forward progress)
+        const da = haversineKm(a.lat, a.lng, destLat, destLng);
+        const db = haversineKm(b.lat, b.lng, destLat, destLng);
+        return da - db;
+      });
+
+    if (candidates.length === 0) {
+      warnings.push("No reachable charging hub found for next leg");
+      break;
     }
+
+    const hub = candidates[0];
+    usedHubs.add(hub.city);
 
     const segRoad = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
     const seg = predictTripSegment(spec, segRoad, curSoc, speedKmh, tempCelsius);
 
     if (seg.arrival_soc < 5) {
-      warnings.push(`Critical: may not reach ${hub.city} — only ${seg.arrival_soc.toFixed(0)}% SOC on arrival`);
+      warnings.push(`Critical: may not reach ${hub.city} — only ${seg.arrival_soc.toFixed(0)}% SOC`);
     }
 
     const chargeTo = 80;

@@ -166,7 +166,7 @@ export default function RoutePlannerPage() {
   const m = result ? Math.round(result.durationMin % 60) : 0;
 
   return (
-    <div className="min-h-screen p-4 md:p-6" style={{ background: "var(--dark-bg)" }}>
+    <div className="min-h-screen pt-16 p-4 md:px-6 md:pb-6" style={{ background: "var(--dark-bg)" }}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-1">

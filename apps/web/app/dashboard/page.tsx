@@ -82,7 +82,7 @@ export default function DashboardPage() {
   const totalKw = livePhysics.power.total;
 
   return (
-    <div className="min-h-screen p-4 md:p-6" style={{ background: "var(--dark-bg)" }}>
+    <div className="min-h-screen pt-16 p-4 md:px-6 md:pb-6" style={{ background: "var(--dark-bg)" }}>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6">
