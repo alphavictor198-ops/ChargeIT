@@ -96,12 +96,12 @@ export default function LandingPage() {
                 <motion.div
                   key={stat.label}
                   whileHover={{ scale: 1.03 }}
-                  className="bg-slate-800 rounded-xl p-6 text-center shadow-lg border border-slate-700"
+                  className="stat-card p-6 text-center"
                   transition={{ delay: i * 0.1 }}
                 >
                   <Icon className="w-6 h-6 mx-auto mb-2" style={{ color: "#00ff9d" }} />
-                  <div className="text-2xl font-black" style={{ color: "#ffffff" }}>{stat.value}</div>
-                  <div className="text-xs mt-1" style={{ color: "#94a3b8" }}>{stat.label}</div>
+                  <div className="text-2xl font-black text-white">{stat.value}</div>
+                  <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
                 </motion.div>
               );
             })}

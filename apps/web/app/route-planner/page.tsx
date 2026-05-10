@@ -273,10 +273,10 @@ export default function RoutePlannerPage() {
                       { icon: "⏱️", val: `${h}h ${m}m`, lbl: "Duration" },
                       { icon: "🔌", val: `${result.stops.length}`, lbl: "Stops" },
                     ].map(s => (
-                      <div key={s.lbl} className="bg-slate-900 text-center p-3 rounded-xl">
+                      <div key={s.lbl} className="text-center p-3 rounded-xl" style={{ background: "#0d1526" }}>
                         <div className="text-lg">{s.icon}</div>
                         <div className="text-sm font-bold text-white">{s.val}</div>
-                        <div className="text-[10px] text-slate-300">{s.lbl}</div>
+                        <div className="text-[10px] text-slate-500">{s.lbl}</div>
                       </div>
                     ))}
                   </div>

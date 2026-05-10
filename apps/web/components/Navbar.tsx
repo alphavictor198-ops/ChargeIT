@@ -27,7 +27,7 @@ export default function Navbar() {
     : "U";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#e0f2fe] border-b border-slate-200 rounded-none shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-[#1a2744] rounded-none">
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
         {/* Logo → Homepage */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
@@ -38,19 +38,25 @@ export default function Navbar() {
         </Link>
 
         {/* Nav Links */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-7">
           {NAV_LINKS.map(link => (
-            <Link key={link.href} href={link.href}>
-              <button className={`btn-secondary text-base font-bold px-4 py-1.5 ${pathname === link.href ? "border-[#0ea5e9]" : ""}`}>
-                {link.label}
-              </button>
+            <Link key={link.href} href={link.href}
+              className={`text-base transition-colors ${
+                pathname === link.href
+                  ? "text-[#00ff9d] font-bold"
+                  : "text-slate-400 font-bold hover:text-[#00ff9d]"
+              }`}>
+              {link.label}
             </Link>
           ))}
           {loggedIn && (
-            <Link href="/history">
-              <button className={`btn-secondary text-base font-bold px-4 py-1.5 ${pathname === "/history" ? "border-[#0ea5e9]" : ""}`}>
-                History
-              </button>
+            <Link href="/history"
+              className={`text-base transition-colors ${
+                pathname === "/history"
+                  ? "text-[#00ff9d] font-bold"
+                  : "text-slate-400 font-bold hover:text-[#00ff9d]"
+              }`}>
+              History
             </Link>
           )}
         </div>

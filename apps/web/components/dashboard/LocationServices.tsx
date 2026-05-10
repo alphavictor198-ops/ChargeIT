@@ -48,7 +48,7 @@ export default function LocationServices() {
             }}
           >
             <Popup>
-              <div className="p-1" style={{ color: "#000000" }}>
+              <div className="p-1">
                 <div className="font-bold text-sm mb-1">{st.name}</div>
                 <div className="text-xs text-slate-500 mb-2">{st.distance} away</div>
                 <button 
