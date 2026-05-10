@@ -139,8 +139,8 @@ export default function StationPanel() {
               </div>
 
               <div className="flex gap-2">
-                <Link href={`/bookings/new?station=${selectedStation.id}`} className="flex-1">
-                  <button className="btn-primary w-full text-xs py-2">Book Slot</button>
+                <Link href={`/route-planner?destName=${encodeURIComponent(selectedStation.name)}&destLat=${selectedStation.lat}&destLng=${selectedStation.lng}`} className="flex-1">
+                  <button className="btn-primary w-full text-xs py-2">Plan Route</button>
                 </Link>
                 <Link href={`/stations/${selectedStation.id}`}>
                   <button className="btn-secondary text-xs py-2 px-3">

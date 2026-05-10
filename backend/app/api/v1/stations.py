@@ -82,7 +82,7 @@ async def nearby_stations(
     charger_type: Optional[str] = None,
     min_power_kw: Optional[float] = None,
     available_only: bool = False,
-    limit: int = Query(50, le=200),
+    limit: int = Query(500, le=2000),
     use_live_api: bool = Query(True, description="Fetch from Open Charge Map API"),
     db: AsyncSession = Depends(get_db),
     _: None = Depends(rate_limit),

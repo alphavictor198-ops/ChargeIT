@@ -17,7 +17,7 @@ async function fetchFromOverpass(
   const radiusM = radiusKm * 1000;
 
   // Overpass QL query for EV charging stations
-  const query = `[out:json][timeout:25];(node["amenity"="charging_station"](around:${radiusM},${lat},${lng});way["amenity"="charging_station"](around:${radiusM},${lat},${lng}););out center ${Math.min(limit, 200)};`;
+  const query = `[out:json][timeout:25];(node["amenity"="charging_station"](around:${radiusM},${lat},${lng});way["amenity"="charging_station"](around:${radiusM},${lat},${lng}););out center ${Math.min(limit, 1000)};`;
 
   const encoded = encodeURIComponent(query);
 
@@ -230,7 +230,7 @@ export async function GET(req: NextRequest) {
   const lat      = parseFloat(sp.get("latitude")  || "22.7196");
   const lng      = parseFloat(sp.get("longitude") || "75.8577");
   const radius   = parseInt(sp.get("radius_km")   || "25", 10);
-  const limit    = parseInt(sp.get("limit")        || "150", 10);
+  const limit    = parseInt(sp.get("limit")        || "1000", 10);
   const chargerType   = sp.get("charger_type") || "";
   const availableOnly = sp.get("available_only") === "true";
 

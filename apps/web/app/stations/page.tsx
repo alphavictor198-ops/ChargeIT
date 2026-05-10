@@ -41,6 +41,33 @@ export default function StationsPage() {
   const [cityName, setCityName] = useState("Indore");
   const [locating, setLocating] = useState(false);
   const [source,   setSource]   = useState<DataSource>("none");
+  const [searchInput, setSearchInput] = useState("");
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchInput.trim()) return;
+    setLocating(true);
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchInput)}&format=json&limit=1`, { headers: { "Accept-Language": "en" } });
+      const d = await r.json();
+      if (d && d.length > 0) {
+        const lat = parseFloat(d[0].lat);
+        const lng = parseFloat(d[0].lon);
+        setUserLat(lat);
+        setUserLng(lng);
+        setUserLocation([lat, lng]);
+        setMapCenter([lat, lng]);
+        setCityName(d[0].display_name.split(",")[0]);
+        toast.success(`Location updated`);
+      } else {
+        toast.error("Location not found");
+      }
+    } catch {
+      toast.error("Error searching location");
+    } finally {
+      setLocating(false);
+    }
+  };
 
   // ── Geolocation ──────────────────────────────────────────
   const locate = useCallback(() => {
@@ -83,7 +110,7 @@ export default function StationsPage() {
           `&radius_km=${filters.radius_km}` +
           `${filters.charger_type ? `&charger_type=${filters.charger_type}` : ""}` +
           `${filters.available_only ? "&available_only=true" : ""}` +
-          `&limit=150`,
+          `&limit=1000`,
           { signal: AbortSignal.timeout(4000) }
         );
         if (backendRes.ok) {
@@ -97,7 +124,7 @@ export default function StationsPage() {
         latitude:       String(userLat),
         longitude:      String(userLng),
         radius_km:      String(filters.radius_km),
-        limit:          "150",
+        limit:          "1000",
         ...(filters.charger_type  ? { charger_type: filters.charger_type } : {}),
         ...(filters.available_only ? { available_only: "true" } : {}),
       });
@@ -130,10 +157,17 @@ export default function StationsPage() {
       {/* ── Top bar ────────────────────────────────────────── */}
       <div className="glass-card border-b border-[#1a2744] rounded-none z-40 shrink-0">
         <div className="px-4 h-12 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-sm text-slate-400">
-            <MapPin className="w-3.5 h-3.5 text-[#00ff9d]" />
-            <span className="hidden sm:block">{cityName}</span>
-          </div>
+          <form onSubmit={handleSearch} className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[#0ea5e9]" />
+            <input 
+              type="text" 
+              placeholder={cityName} 
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              className="bg-white border border-slate-300 rounded px-2 py-1 text-sm w-32 md:w-48 text-slate-800"
+            />
+            <button type="submit" className="btn-secondary text-xs px-2 py-1">Search</button>
+          </form>
 
           {/* Source badge */}
           {source !== "none" && (

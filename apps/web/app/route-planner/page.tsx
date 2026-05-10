@@ -13,8 +13,9 @@ const VEHICLES = Object.values(VEHICLE_SPECS);
 function CityPicker({ label, value, onChange }: { label: string; value: City; onChange: (c: City) => void }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [results, setResults] = useState<City[]>([]);
+  const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const filtered = useMemo(() => q ? CITIES.filter(c => c.city.toLowerCase().includes(q.toLowerCase())).slice(0, 12) : CITIES, [q]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -22,24 +23,45 @@ function CityPicker({ label, value, onChange }: { label: string; value: City; on
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  useEffect(() => {
+    if (!q) { setResults([]); return; }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&featuretype=city`);
+        const data = await res.json();
+        const cities = data.map((d: any) => ({
+          city: d.display_name.split(",")[0],
+          lat: parseFloat(d.lat),
+          lng: parseFloat(d.lon),
+        }));
+        setResults(cities);
+      } catch {
+        // ignore error
+      } finally {
+        setLoading(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [q]);
+
   return (
     <div ref={ref} className="relative mb-3">
       <label className="text-xs text-slate-400 block mb-1">{label}</label>
       <input
         value={open ? q : value.city}
-        onFocus={() => { setOpen(true); setQ(""); }}
+        onFocus={() => { setOpen(true); setQ(""); setResults([]); }}
         onChange={e => { setQ(e.target.value); setOpen(true); }}
         placeholder="Type city name..."
-        className="w-full text-sm py-2 px-3"
+        className="w-full text-sm py-2 px-3 bg-white text-slate-800 border border-slate-300 rounded"
       />
-      {open && (
-        <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl shadow-xl"
-          style={{ background: "#0d1526", border: "1px solid #1a2744" }}>
-          {filtered.map(c => (
-            <div key={c.city} onClick={() => { onChange(c); setOpen(false); setQ(""); }}
-              className="px-3 py-2 text-sm text-slate-300 hover:bg-[#1a2744] cursor-pointer">{c.city}</div>
+      {open && q && (
+        <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl shadow-xl bg-slate-900 border border-slate-700">
+          {loading ? <div className="px-3 py-2 text-xs text-slate-400">Searching...</div> : results.map((c, i) => (
+            <div key={i} onClick={() => { onChange(c); setOpen(false); setQ(""); }}
+              className="px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 cursor-pointer">{c.city}</div>
           ))}
-          {filtered.length === 0 && <div className="px-3 py-2 text-xs text-slate-600">No city found</div>}
+          {!loading && results.length === 0 && <div className="px-3 py-2 text-xs text-slate-500">No city found</div>}
         </div>
       )}
     </div>
@@ -251,10 +273,10 @@ export default function RoutePlannerPage() {
                       { icon: "⏱️", val: `${h}h ${m}m`, lbl: "Duration" },
                       { icon: "🔌", val: `${result.stops.length}`, lbl: "Stops" },
                     ].map(s => (
-                      <div key={s.lbl} className="text-center p-3 rounded-xl" style={{ background: "#0d1526" }}>
+                      <div key={s.lbl} className="bg-slate-900 text-center p-3 rounded-xl">
                         <div className="text-lg">{s.icon}</div>
                         <div className="text-sm font-bold text-white">{s.val}</div>
-                        <div className="text-[10px] text-slate-500">{s.lbl}</div>
+                        <div className="text-[10px] text-slate-300">{s.lbl}</div>
                       </div>
                     ))}
                   </div>
