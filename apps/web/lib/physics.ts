@@ -244,6 +244,12 @@ export const CHARGING_HUBS: { city: string; operator: string; lat: number; lng: 
   { city: "Patna",        operator: "BPCL",         lat: 25.5941, lng: 85.1376, power_kw: 50,  wait_min: 12 },
   // Central India — fill Bhopal-Nagpur-Hyderabad gaps
   { city: "Indore",       operator: "Statiq",       lat: 22.7196, lng: 75.8577, power_kw: 60,  wait_min: 10 },
+  { city: "Ujjain",       operator: "Statiq",       lat: 23.1765, lng: 75.7885, power_kw: 60,  wait_min: 10 },
+  { city: "Kota",         operator: "Tata Power",   lat: 25.2138, lng: 75.8648, power_kw: 60,  wait_min: 10 },
+  { city: "Tonk",         operator: "Jio-bp",       lat: 26.1667, lng: 75.7833, power_kw: 50,  wait_min: 8  },
+  { city: "Biaora",       operator: "BPCL",         lat: 23.9167, lng: 76.9167, power_kw: 50,  wait_min: 8  },
+  { city: "Guna",         operator: "Tata Power",   lat: 24.6496, lng: 77.3156, power_kw: 50,  wait_min: 5  },
+  { city: "Shivpuri",     operator: "ChargeZone",   lat: 25.4299, lng: 77.6599, power_kw: 50,  wait_min: 8  },
   { city: "Dewas",        operator: "Tata Power",   lat: 22.9623, lng: 76.0508, power_kw: 50,  wait_min: 5  },
   { city: "Bhopal",       operator: "Tata Power",   lat: 23.2599, lng: 77.4126, power_kw: 60,  wait_min: 12 },
   { city: "Hoshangabad",  operator: "IOCL",         lat: 22.7547, lng: 77.7340, power_kw: 50,  wait_min: 8  },
@@ -331,124 +337,141 @@ export function planRoute(
     };
   }
 
-  // Wide corridor — prefer on-route hubs but don't exclude reachable ones
-  const corridor = CHARGING_HUBS.filter(hub => {
-    const dToHub = haversineKm(originLat, originLng, hub.lat, hub.lng);
-    const dHubToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
-    const detour = (dToHub + dHubToDest) / Math.max(crowKm, 1);
-    return detour < 1.6 && dHubToDest < crowKm * 0.98;
-  });
+  // A* Graph Search for absolute optimal route (shortest distance + minimum stops)
+  interface AStarNode { id: string; lat: number; lng: number; hub?: any; }
+  const nodes: Map<string, AStarNode> = new Map();
+  nodes.set("origin", { id: "origin", lat: originLat, lng: originLng });
+  nodes.set("dest", { id: "dest", lat: destLat, lng: destLng });
+  CHARGING_HUBS.forEach(h => nodes.set(h.city, { id: h.city, lat: h.lat, lng: h.lng, hub: h }));
 
-  console.log(`[Route] ${spec.name}: ${crowKm.toFixed(0)}km crow, corridor: ${corridor.length} hubs, SOC: ${startSoc}%`);
+  const gScore = new Map<string, number>();
+  const fScore = new Map<string, number>();
+  const cameFrom = new Map<string, string>();
+  const nodeSoc = new Map<string, number>();
 
-  // Range-first greedy search: battery range decides next stop
-  const stops: ChargingStopPlan[] = [];
-  let curLat = originLat, curLng = originLng;
-  let curSoc = startSoc;
-  let totalTime = 0;
-  let totalEnergy = 0;
-  const usedHubs = new Set<string>();
-
-  for (let iter = 0; iter < 20; iter++) {
-    // Can we reach destination directly?
-    const remRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
-    const remSeg = predictTripSegment(spec, remRoad, curSoc, speedKmh, tempCelsius);
-    if (remSeg.arrival_soc >= minArrivalSoc) {
-      console.log(`[Route] iter ${iter}: can reach dest directly, arrival ${remSeg.arrival_soc}%`);
-      break;
-    }
-
-    // Use effective efficiency for accurate range calc
-    const effWh = effectiveEfficiency(spec, speedKmh, tempCelsius);
-    const usableKwh = spec.battery_kwh * ((curSoc - 5) / 100);
-    const rangeKm = (usableKwh * 1000) / effWh;
-    const curDistToDest = haversineKm(curLat, curLng, destLat, destLng);
-
-    console.log(`[Route] iter ${iter}: pos=(${curLat.toFixed(2)},${curLng.toFixed(2)}), SOC=${curSoc}%, range=${rangeKm.toFixed(0)}km, distToDest=${curDistToDest.toFixed(0)}km`);
-
-    // Step 1: Corridor hubs closer to destination (preferred)
-    let candidates = corridor
-      .filter(hub => {
-        if (usedHubs.has(hub.city)) return false;
-        const hubDistToDest = haversineKm(hub.lat, hub.lng, destLat, destLng);
-        if (hubDistToDest >= curDistToDest - 5) return false; // must be at least 5km closer to dest
-        const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
-        return segDist <= rangeKm;
-      });
-
-    // Step 2: If no forward corridor hub, try ANY corridor hub within range (may go sideways)
-    if (candidates.length === 0) {
-      candidates = corridor.filter(hub => {
-        if (usedHubs.has(hub.city)) return false;
-        const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
-        return segDist > 5 && segDist <= rangeKm; // skip origin hub (>5km away)
-      });
-      console.log(`[Route] iter ${iter}: sideways corridor: ${candidates.length} (${candidates.map(h=>h.city).join(', ')})`);
-    }
-
-    // Step 3: If still nothing, search ALL hubs within range
-    if (candidates.length === 0) {
-      candidates = CHARGING_HUBS.filter(hub => {
-        if (usedHubs.has(hub.city)) return false;
-        const segDist = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
-        return segDist > 5 && segDist <= rangeKm;
-      });
-      console.log(`[Route] iter ${iter}: ALL-hub fallback: ${candidates.length} (${candidates.map(h=>h.city).join(', ')})`);
-    }
-
-    console.log(`[Route] iter ${iter}: final candidates: ${candidates.length} (${candidates.map(h=>h.city).join(', ')})`);
-
-    // Sort: prefer hub closest to destination (max forward progress)
-    candidates.sort((a, b) => {
-      const da = haversineKm(a.lat, a.lng, destLat, destLng);
-      const db = haversineKm(b.lat, b.lng, destLat, destLng);
-      return da - db;
-    });
-
-    if (candidates.length === 0) {
-      warnings.push("No charging station within battery range — route may be infeasible");
-      console.log(`[Route] iter ${iter}: NO CANDIDATES — breaking`);
-      break;
-    }
-
-    const hub = candidates[0];
-    usedHubs.add(hub.city);
-
-    const segRoad = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
-    const seg = predictTripSegment(spec, segRoad, curSoc, speedKmh, tempCelsius);
-
-    if (seg.arrival_soc < 5) {
-      warnings.push(`Critical: may not reach ${hub.city} — only ${seg.arrival_soc.toFixed(0)}% SOC`);
-    }
-
-    const chargeTo = 80;
-    const energyToAdd = ((chargeTo - seg.arrival_soc) / 100) * spec.battery_kwh;
-    const chargeTimeMin = (energyToAdd / hub.power_kw) * 60;
-    const legTimeMin = (segRoad / avgSpeed) * 60;
-
-    stops.push({
-      city: hub.city,
-      operator: hub.operator,
-      lat: hub.lat,
-      lng: hub.lng,
-      arrivalSoc: seg.arrival_soc,
-      chargeTo,
-      chargeTimeMin: +chargeTimeMin.toFixed(0),
-      waitTimeMin: hub.wait_min,
-      stationType: hub.power_kw >= 100 ? "DC Ultra-Fast" : hub.power_kw >= 50 ? "DC Fast" : "AC Fast",
-    });
-
-    totalTime += legTimeMin + chargeTimeMin + hub.wait_min;
-    totalEnergy += seg.energy_kwh;
-    curLat = hub.lat; curLng = hub.lng;
-    curSoc = chargeTo;
+  for (const key of nodes.keys()) {
+    gScore.set(key, Infinity);
+    fScore.set(key, Infinity);
   }
 
-  // Final leg to destination
-  const finalRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
-  const finalSeg = predictTripSegment(spec, finalRoad, curSoc, speedKmh, tempCelsius);
-  totalTime += (finalRoad / avgSpeed) * 60;
-  totalEnergy += finalSeg.energy_kwh;
+  gScore.set("origin", 0);
+  fScore.set("origin", haversineKm(originLat, originLng, destLat, destLng));
+  nodeSoc.set("origin", startSoc);
+
+  const openSet = new Set<string>(["origin"]);
+  let pathFound = false;
+  const effWh = effectiveEfficiency(spec, speedKmh, tempCelsius);
+
+  while (openSet.size > 0) {
+    let currentId = "";
+    let minF = Infinity;
+    for (const id of openSet) {
+      const f = fScore.get(id)!;
+      if (f < minF) { minF = f; currentId = id; }
+    }
+
+    if (currentId === "dest") {
+      pathFound = true;
+      break;
+    }
+
+    openSet.delete(currentId);
+    const current = nodes.get(currentId)!;
+    const curArrivalSoc = nodeSoc.get(currentId)!;
+    
+    // Origin uses startSoc. Hubs charge up to 90% for reachability calculation.
+    const startingSoc = currentId === "origin" ? curArrivalSoc : 90;
+    const usableKwh = spec.battery_kwh * ((startingSoc - 5) / 100);
+    const rangeKm = (usableKwh * 1000) / effWh;
+
+    for (const [neighborId, neighbor] of nodes.entries()) {
+      if (neighborId === currentId || neighborId === "origin") continue;
+      
+      const distCrow = haversineKm(current.lat, current.lng, neighbor.lat, neighbor.lng);
+      const distRoad = distCrow * ROAD_FACTOR;
+
+      // Check if reachable
+      if (distRoad <= rangeKm) {
+        // Penalty for making a stop (equivalent to 50 km) to prefer fewer stops
+        const stopPenalty = neighborId === "dest" ? 0 : 50;
+        const tentativeG = gScore.get(currentId)! + distRoad + stopPenalty;
+
+        if (tentativeG < gScore.get(neighborId)!) {
+          cameFrom.set(neighborId, currentId);
+          gScore.set(neighborId, tentativeG);
+          fScore.set(neighborId, tentativeG + haversineKm(neighbor.lat, neighbor.lng, destLat, destLng));
+          
+          const energyKwh = (distRoad * effWh) / 1000;
+          const socConsumed = (energyKwh / spec.battery_kwh) * 100;
+          nodeSoc.set(neighborId, startingSoc - socConsumed);
+          
+          openSet.add(neighborId);
+        }
+      }
+    }
+  }
+
+  const stops: ChargingStopPlan[] = [];
+  let totalTime = 0;
+  let totalEnergy = 0;
+  let finalArrivalSoc = 0;
+
+  if (pathFound) {
+    const path: string[] = [];
+    let curr = "dest";
+    while (curr !== "origin") {
+      path.unshift(curr);
+      curr = cameFrom.get(curr)!;
+    }
+    
+    let curLat = originLat, curLng = originLng;
+    let currentSoc = startSoc;
+
+    for (const stepId of path) {
+      if (stepId === "dest") {
+        const segRoad = haversineKm(curLat, curLng, destLat, destLng) * ROAD_FACTOR;
+        const seg = predictTripSegment(spec, segRoad, currentSoc, speedKmh, tempCelsius);
+        totalTime += (segRoad / avgSpeed) * 60;
+        totalEnergy += seg.energy_kwh;
+        finalArrivalSoc = seg.arrival_soc;
+      } else {
+        const hubNode = nodes.get(stepId)!;
+        const hub = hubNode.hub!;
+        const segRoad = haversineKm(curLat, curLng, hub.lat, hub.lng) * ROAD_FACTOR;
+        const seg = predictTripSegment(spec, segRoad, currentSoc, speedKmh, tempCelsius);
+        
+        // Dynamically compute charge needed for next leg, but at least 80%
+        const nextId = path[path.indexOf(stepId) + 1];
+        const nextNode = nodes.get(nextId)!;
+        const nextRoad = haversineKm(hub.lat, hub.lng, nextNode.lat, nextNode.lng) * ROAD_FACTOR;
+        const nextEnergy = (nextRoad * effWh) / 1000;
+        const nextSocConsumed = (nextEnergy / spec.battery_kwh) * 100;
+        const requiredCharge = Math.min(100, nextSocConsumed + 10); // 10% buffer
+        const chargeToLimit = Math.max(80, requiredCharge);
+
+        const energyToAdd = ((chargeToLimit - seg.arrival_soc) / 100) * spec.battery_kwh;
+        const chargeTimeMin = (energyToAdd / hub.power_kw) * 60;
+        const legTimeMin = (segRoad / avgSpeed) * 60;
+
+        stops.push({
+          city: hub.city, operator: hub.operator, lat: hub.lat, lng: hub.lng,
+          arrivalSoc: seg.arrival_soc, chargeTo: +chargeToLimit.toFixed(0),
+          chargeTimeMin: +chargeTimeMin.toFixed(0), waitTimeMin: hub.wait_min,
+          stationType: hub.power_kw >= 100 ? "DC Ultra-Fast" : hub.power_kw >= 50 ? "DC Fast" : "AC Fast",
+        });
+
+        totalTime += legTimeMin + chargeTimeMin + hub.wait_min;
+        totalEnergy += seg.energy_kwh;
+        curLat = hub.lat; curLng = hub.lng;
+        currentSoc = chargeToLimit;
+      }
+    }
+  } else {
+    warnings.push("No charging station within battery range — route may be infeasible");
+    // Fallback: draw straight line
+    totalTime = drivingMin;
+    finalArrivalSoc = direct.arrival_soc;
+  }
 
   const mc = monteCarloSoc(spec, roadKm, startSoc, speedKmh, tempCelsius);
 
@@ -457,7 +480,7 @@ export function planRoute(
     roadDistanceKm: roadKm,
     durationMin: +totalTime.toFixed(0),
     stops,
-    arrivalSoc: +finalSeg.arrival_soc.toFixed(1),
+    arrivalSoc: +finalArrivalSoc.toFixed(1),
     energyKwh: +totalEnergy.toFixed(2),
     efficiency: direct.efficiency_wh_per_km,
     monteCarlo: mc,
