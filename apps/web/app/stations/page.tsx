@@ -20,12 +20,13 @@ const CHARGER_TYPES = [
 ];
 const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 100];
 
-type DataSource = "backend" | "ocm" | "overpass" | "curated" | "none";
+type DataSource = "backend" | "ocm" | "overpass" | "curated" | "mocked" | "none";
 const SOURCE_LABELS: Record<DataSource, { label: string; color: string }> = {
   backend:  { label: "GatiCharge Backend",        color: "#00ff9d" },
   ocm:      { label: "Open Charge Map (Live)",    color: "#00d4ff" },
   overpass: { label: "OpenStreetMap (Live)",       color: "#8b5cf6" },
   curated:  { label: "GatiCharge Verified Data",   color: "#f59e0b" },
+  mocked:   { label: "AI Generated (No Local Data)", color: "#eab308" },
   none:     { label: "",                           color: "#ef4444" },
 };
 

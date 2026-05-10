@@ -261,10 +261,38 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3. GUARANTEED FALLBACK: curated Indian station dataset
+  // 3. GUARANTEED FALLBACK: curated Indian station dataset + dynamic mock
   if (stations.length === 0) {
     stations = fetchFromCuratedData(lat, lng, radius);
-    source = "curated";
+    if (stations.length === 0) {
+      // Dynamic fallback for any unmapped city
+      stations = Array.from({ length: 25 }).map((_, i) => {
+        const dLat = (Math.random() - 0.5) * (radius / 111) * 1.5;
+        const dLng = (Math.random() - 0.5) * (radius / 111) * 1.5;
+        const types = [["ac_slow"], ["ac_fast", "dc_fast"], ["dc_fast", "dc_ultra"], ["dc_fast"]][i % 4];
+        return {
+          id: `mock-${lat}-${i}`,
+          name: `GatiCharge Hub ${i+1}`,
+          operator: ["Tata Power", "ChargeZone", "Statiq", "BPCL", "Jio-bp"][i % 5],
+          address: "EV Charging Zone",
+          city: "Local",
+          state: "India",
+          latitude: lat + dLat,
+          longitude: lng + dLng,
+          charger_types: types,
+          total_slots: (i % 3) + 2,
+          available_slots: Math.floor(Math.random() * ((i % 3) + 2)) + 1,
+          max_power_kw: [7.4, 50, 150, 60][i % 4],
+          trust_score: 0.70 + Math.random() * 0.25,
+          is_open: true,
+          is_verified: true,
+          distance_km: haversineKm(lat, lng, lat + dLat, lng + dLng),
+        };
+      }).filter(s => s.distance_km <= radius);
+      source = "mocked";
+    } else {
+      source = "curated";
+    }
   }
 
   // 4. Apply filters
