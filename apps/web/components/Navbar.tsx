@@ -10,7 +10,6 @@ const NAV_LINKS = [
   { label: "Features", href: "/features" },
   { label: "Stations", href: "/stations" },
   { label: "Route Planner", href: "/route-planner" },
-  { label: "Analytics", href: "/analytics" },
 ];
 
 export default function Navbar() {
@@ -39,17 +38,21 @@ export default function Navbar() {
         </Link>
 
         {/* Nav Links */}
-        <div className="hidden md:flex items-center gap-7">
+        <div className="hidden md:flex items-center gap-4">
           {NAV_LINKS.map(link => (
-            <Link key={link.href} href={link.href}
-              className={`text-sm transition-colors ${
-                pathname === link.href
-                  ? "text-[#00ff9d] font-semibold"
-                  : "text-slate-400 hover:text-[#00ff9d]"
-              }`}>
-              {link.label}
+            <Link key={link.href} href={link.href}>
+              <button className={`btn-secondary text-sm font-bold px-4 py-1.5 ${pathname === link.href ? "border-[#0ea5e9]" : ""}`}>
+                {link.label}
+              </button>
             </Link>
           ))}
+          {loggedIn && (
+            <Link href="/history">
+              <button className={`btn-secondary text-sm font-bold px-4 py-1.5 ${pathname === "/history" ? "border-[#0ea5e9]" : ""}`}>
+                History
+              </button>
+            </Link>
+          )}
         </div>
 
         {/* Right side: Auth */}

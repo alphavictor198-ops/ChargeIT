@@ -70,6 +70,28 @@ export default function RoutePlannerPage() {
     return { crow: +crow.toFixed(0), road: +(crow * ROAD_FACTOR).toFixed(0) };
   }, [origin, dest]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const dName = params.get("destName");
+    const dLat = params.get("destLat");
+    const dLng = params.get("destLng");
+    
+    if (dName && dLat && dLng) {
+      const customDest = { city: dName, lat: parseFloat(dLat), lng: parseFloat(dLng) };
+      setDest(customDest);
+      const currentOrigin = CITIES.find(c => c.city === "Indore")!;
+      setOrigin(currentOrigin);
+      
+      setIsCalc(true);
+      setTimeout(() => {
+        const plan = planRoute(currentOrigin.lat, currentOrigin.lng, customDest.lat, customDest.lng, spec, soc, minSoc, 65, 28);
+        setResult(plan);
+        setIsCalc(false);
+        toast.success(`Route planned to ${customDest.city}`);
+      }, 500);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handlePlan = () => {
     if (origin.city === dest.city) { toast.error("Pick different cities"); return; }
     setIsCalc(true);

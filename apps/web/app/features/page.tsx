@@ -232,7 +232,6 @@ export default function FeaturesPage() {
       <footer className="border-t border-[#1a2744] py-8 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-[#00ff9d]" />
             <span className="font-bold gradient-text">GatiCharge</span>
             <span className="text-slate-600 text-sm">© 2025</span>
           </Link>

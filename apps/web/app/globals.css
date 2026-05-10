@@ -24,12 +24,12 @@
     --radius: 0.75rem;
 
     /* GatiCharge brand colors */
-    --neon-green: #00ff9d;
-    --neon-blue: #00d4ff;
-    --neon-purple: #8b5cf6;
-    --dark-bg: #060b18;
-    --dark-card: #0d1526;
-    --dark-border: #1a2744;
+    --neon-green: #0ea5e9; /* Light blue accent */
+    --neon-blue: #3b82f6; /* Blue accent */
+    --neon-purple: #6366f1; /* Indigo */
+    --dark-bg: #e0f2fe; /* Light blue background */
+    --dark-card: #f0f9ff; /* Very light blue for cards */
+    --dark-border: #bae6fd; /* Light blue borders */
   }
 }
 
@@ -41,16 +41,32 @@
 
   html {
     scroll-behavior: smooth;
+    font-size: 18px; /* Increase text size globally */
+  }
+
+  /* Force white bold text on dark backgrounds */
+  [class*="bg-[#060b18]"], [class*="bg-[#0d1526]"], [class*="bg-[#1a2744]"], [class*="bg-slate-800"], [class*="bg-slate-900"] {
+    color: #ffffff !important;
+    font-weight: bold !important;
+  }
+  [class*="bg-[#060b18]"] *, [class*="bg-[#0d1526]"] *, [class*="bg-[#1a2744]"] *, [class*="bg-slate-800"] *, [class*="bg-slate-900"] * {
+    color: #ffffff !important;
+    font-weight: bold !important;
   }
 
   body {
     background-color: var(--dark-bg);
-    color: hsl(var(--foreground));
+    color: #0f172a !important;
     font-family: var(--font-inter), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
+
+  .text-white { color: #0f172a !important; }
+  .text-slate-400 { color: #334155 !important; }
+  .text-slate-300 { color: #1e293b !important; }
+  .text-slate-500 { color: #475569 !important; }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
@@ -71,11 +87,12 @@
 /* ─── Utility Classes ─────────────────────────────────────────────── */
 
 .glass-card {
-  background: rgba(13, 21, 38, 0.8);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(26, 39, 68, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.4);
   border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.1);
 }
 
 .neon-border {
@@ -122,37 +139,52 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #00ff9d, #00d4ff);
-  color: #060b18;
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  color: #ffffff !important;
   font-weight: 700;
   border-radius: 10px;
   padding: 12px 28px;
   border: none;
+  border-bottom: 4px solid #0284c7;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   position: relative;
   overflow: hidden;
 }
 
+.btn-primary .text-white {
+  color: #ffffff !important;
+}
+
 .btn-primary:hover {
-  box-shadow: 0 0 30px rgba(0, 255, 157, 0.4);
-  transform: translateY(-1px);
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.4);
+}
+
+.btn-primary:active {
+  border-bottom-width: 0px;
+  transform: translateY(4px);
 }
 
 .btn-secondary {
-  background: rgba(13, 21, 38, 0.8);
-  color: var(--neon-green);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--neon-blue);
   font-weight: 600;
   border-radius: 10px;
   padding: 12px 28px;
-  border: 1px solid rgba(0, 255, 157, 0.3);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-bottom: 4px solid rgba(14, 165, 233, 0.6);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-secondary:hover {
-  background: rgba(0, 255, 157, 0.1);
-  border-color: var(--neon-green);
+  background: rgba(224, 242, 254, 0.8);
+  border-color: var(--neon-blue);
+}
+
+.btn-secondary:active {
+  border-bottom-width: 1px;
+  transform: translateY(3px);
 }
 
 /* Station marker pulse animation */
@@ -202,15 +234,15 @@
 
 /* Custom Leaflet popup */
 .leaflet-popup-content-wrapper {
-  background: rgba(13, 21, 38, 0.95) !important;
-  border: 1px solid rgba(0, 255, 157, 0.3) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(14, 165, 233, 0.4) !important;
   border-radius: 12px !important;
-  color: #e2e8f0 !important;
+  color: #000000 !important;
   backdrop-filter: blur(20px);
 }
 
 .leaflet-popup-tip {
-  background: rgba(13, 21, 38, 0.95) !important;
+  background: #ffffff !important;
 }
 
 /* Gradient separator */

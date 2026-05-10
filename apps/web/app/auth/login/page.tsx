@@ -97,9 +97,6 @@ function LoginPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00ff9d] to-[#00d4ff] flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-8 h-8 text-[#060b18]" />
-          </div>
           <h1 className="text-2xl font-black text-white">Welcome to GatiCharge</h1>
           <p className="text-slate-400 text-sm mt-1">India's EV Intelligence Platform</p>
         </div>
@@ -266,9 +263,6 @@ function RegisterPage() {
         className="glass-card neon-border w-full max-w-md p-8 relative z-10"
       >
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00ff9d] to-[#00d4ff] flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-8 h-8 text-[#060b18]" />
-          </div>
           <h1 className="text-2xl font-black text-white">Create Account</h1>
           <p className="text-slate-400 text-sm mt-1">Join India's smartest EV platform</p>
         </div>
