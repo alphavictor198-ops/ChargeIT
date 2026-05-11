@@ -453,7 +453,8 @@ export default function ActiveTripScreen() {
       )}
 
       <View style={{ height: 40 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
