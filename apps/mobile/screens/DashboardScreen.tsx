@@ -3,14 +3,27 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getTrips, TripRecord, getPatternInsight } from '../lib/tripStore';
+import { useVehicle } from '../lib/VehicleContext';
+import { VEHICLE_SPECS } from '../lib/physics';
+
+const VEHICLE_LIST = Object.values(VEHICLE_SPECS);
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
-  const [batteryLevel] = useState(82);
-  const [estimatedRange] = useState(315);
-  const [status] = useState("Parked & Ready");
+  const { spec, batteryPercent, estimatedRange, vehicleId, setVehicleId, setBatteryPercent, isConnected, setIsConnected } = useVehicle();
   const [recentTrips, setRecentTrips] = useState<TripRecord[]>([]);
   const [patternInsight, setPatternInsight] = useState('');
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  const handleConnect = () => {
+    setIsDetecting(true);
+    setTimeout(() => {
+      setVehicleId('tiago_ev');
+      setBatteryPercent(64); // Simulate reading live SOC from OBD
+      setIsDetecting(false);
+      setIsConnected(true);
+    }, 2000);
+  };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
@@ -28,18 +41,36 @@ export default function DashboardScreen() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hello, Driver</Text>
-        <Text style={styles.date}>{new Date().toDateString()}</Text>
+        <View>
+          <Text style={styles.greeting}>Hello</Text>
+          <Text style={styles.date}>{new Date().toDateString()}</Text>
+        </View>
+        {!isConnected ? (
+          <TouchableOpacity 
+            style={styles.connectBtn} 
+            onPress={handleConnect}
+            disabled={isDetecting}
+          >
+            <Text style={styles.connectBtnText}>
+              {isDetecting ? 'Connecting...' : 'CONNECT'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.connectedBadge}>
+            <View style={styles.connectedDot} />
+            <Text style={styles.connectedText}>Connected</Text>
+          </View>
+        )}
       </View>
 
       {/* Twin Gauges — Car + Human */}
       <View style={styles.gaugeRow}>
         <View style={styles.gaugeCard}>
           <View style={[styles.gaugeCircle, { borderColor: '#ffaa44' }]}>
-            <Text style={styles.gaugeValue}>{batteryLevel}%</Text>
+            <Text style={styles.gaugeValue}>{isConnected ? `${batteryPercent}%` : '-- %'}</Text>
           </View>
           <Text style={styles.gaugeLabel}>🔋 Car Battery</Text>
-          <Text style={styles.gaugeSub}>{estimatedRange} km range</Text>
+          <Text style={styles.gaugeSub}>{isConnected ? `${estimatedRange} km range` : '-- km range'}</Text>
         </View>
         <View style={styles.gaugeCard}>
           <View style={[styles.gaugeCircle, { borderColor: hssColor }]}>
@@ -53,16 +84,25 @@ export default function DashboardScreen() {
       {/* Vehicle Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Vehicle Status</Text>
-        <Text style={styles.vehicleName}>Tata Nexon EV</Text>
-        <Text style={styles.vehicleStatus}>{status}</Text>
+        <Text style={styles.vehicleName}>{isConnected ? spec.name : 'Unknown Vehicle'}</Text>
+        <Text style={styles.vehicleStatus}>{isConnected ? 'Parked & Ready' : 'Disconnected'}</Text>
+        <Text style={styles.vehicleSpec}>
+          {isConnected ? `${spec.battery_kwh} kWh · ${spec.max_charge_rate_kw} kW max charge · ${spec.mass_kg} kg` : '--- kWh · --- kW · --- kg'}
+        </Text>
       </View>
 
       {/* Quick Actions */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.actionGrid}>
-        <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => navigation.navigate('PassengerProfile')}>
-          <Text style={styles.actionBtnTitleDark}>🚀 Start Trip</Text>
-          <Text style={styles.actionBtnDescDark}>Monitor your state</Text>
+        <TouchableOpacity 
+          style={[styles.actionBtnPrimary, !isConnected && { opacity: 0.5 }]} 
+          onPress={() => {
+            if (!isConnected) return alert('Please connect to the vehicle first.');
+            navigation.navigate('PassengerProfile');
+          }}
+        >
+          <Text style={styles.actionBtnTitleDark}>🚀 Plan Trip</Text>
+          <Text style={styles.actionBtnDescDark}>Setup & Navigation</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => navigation.navigate('Map')}>
           <Text style={styles.actionBtnTitle}>🗺 Station Map</Text>
@@ -70,10 +110,6 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.actionGrid}>
-        <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => navigation.navigate('RoutePlanner')}>
-          <Text style={styles.actionBtnTitle}>📍 Route Planner</Text>
-          <Text style={styles.actionBtnDesc}>Plan your long trip</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => {
           if (recentTrips.length > 0) {
             const t = recentTrips[0];
@@ -161,9 +197,27 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#060404', padding: 20 },
-  header: { marginTop: 40, marginBottom: 20 },
+  header: { marginTop: 40, marginBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { fontSize: 28, fontWeight: 'bold', color: 'white' },
   date: { fontSize: 14, color: '#94a3b8', marginTop: 5 },
+
+  connectBtn: { 
+    backgroundColor: '#ff6b1a', 
+    paddingHorizontal: 15, 
+    paddingVertical: 10, 
+    borderRadius: 10, 
+    borderBottomWidth: 4,
+    borderBottomColor: '#b34700',
+    shadowColor: '#ff6b1a', 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.5, 
+    shadowRadius: 5, 
+    elevation: 8 
+  },
+  connectBtnText: { color: 'white', fontWeight: 'bold', fontSize: 12, letterSpacing: 1 },
+  connectedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(68,255,178,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(68,255,178,0.3)' },
+  connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#44ffb2', marginRight: 6 },
+  connectedText: { color: '#44ffb2', fontWeight: 'bold', fontSize: 12 },
 
   gaugeRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   gaugeCard: { flex: 1, alignItems: 'center', backgroundColor: '#0a0806', borderRadius: 15, padding: 18, marginHorizontal: 5, borderWidth: 1, borderColor: 'rgba(255,107,26,0.15)' },
@@ -176,6 +230,16 @@ const styles = StyleSheet.create({
   cardTitle: { color: '#ffaa44', fontSize: 13, opacity: 0.8 },
   vehicleName: { color: 'white', fontSize: 20, fontWeight: 'bold', marginTop: 5 },
   vehicleStatus: { color: '#44ffb2', fontSize: 14, marginTop: 3 },
+  vehicleSpec: { color: '#94a3b8', fontSize: 11, marginTop: 5 },
+
+  vehiclePicker: { backgroundColor: '#0a0806', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,107,26,0.3)', marginBottom: 15, overflow: 'hidden' },
+  autoDetectBtn: { backgroundColor: '#1a2744', padding: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,107,26,0.2)', alignItems: 'center' },
+  autoDetectText: { color: '#0ea5e9', fontSize: 14, fontWeight: 'bold' },
+  vehicleOption: { padding: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,107,26,0.1)' },
+  vehicleOptionActive: { backgroundColor: 'rgba(255,107,26,0.15)' },
+  vehicleOptionText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  vehicleOptionTextActive: { color: '#ff6b1a' },
+  vehicleOptionSub: { color: '#94a3b8', fontSize: 12, marginTop: 3 },
 
   sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 12, marginTop: 5 },
 

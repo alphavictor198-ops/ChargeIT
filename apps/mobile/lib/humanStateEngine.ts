@@ -13,11 +13,10 @@
 
 // ─── Types ────────────────────────────────────────────────────────
 export interface HSSBreakdown {
-  driveDuration: number;   // 0–30
-  timeOfDay: number;       // 0–20
+  driveDuration: number;   // 0–35
+  timeOfDay: number;       // 0–25
   microSwerve: number;     // 0–25
   brakingPattern: number;  // 0–15
-  blinkRate: number;       // 0–10
 }
 
 export interface HSSResult {
@@ -49,24 +48,24 @@ export interface PostHaltNudge {
   type: 'info' | 'optimal' | 'ready' | 'warning';
 }
 
-// ─── 1. Drive Duration Score (0–30) ──────────────────────────────
+// ─── 1. Drive Duration Score (0–35) ──────────────────────────────
 export function scoreDriveDuration(minutes: number): number {
-  if (minutes <= 60) return 30;
-  if (minutes <= 90) return 30 - ((minutes - 60) / 30) * 8;   // 30 → 22
-  if (minutes <= 120) return 22 - ((minutes - 90) / 30) * 10;  // 22 → 12
-  return Math.max(0, 12 - ((minutes - 120) / 60) * 12);        // 12 → 0
+  if (minutes <= 60) return 35;
+  if (minutes <= 90) return 35 - ((minutes - 60) / 30) * 10;   // 35 → 25
+  if (minutes <= 120) return 25 - ((minutes - 90) / 30) * 15;  // 25 → 10
+  return Math.max(0, 10 - ((minutes - 120) / 60) * 10);        // 10 → 0
 }
 
-// ─── 2. Time of Day Score (0–20) ─────────────────────────────────
+// ─── 2. Time of Day Score (0–25) ─────────────────────────────────
 export function scoreTimeOfDay(hour: number): number {
   // Post-lunch dip: 2PM–4PM
-  if (hour >= 14 && hour < 16) return 10;
+  if (hour >= 14 && hour < 16) return 12;
   // Circadian low: 11PM–5AM
-  if (hour >= 23 || hour < 5) return 5;
+  if (hour >= 23 || hour < 5) return 8;
   // Transition zones
-  if (hour >= 21 && hour < 23) return 14;
-  if (hour >= 5 && hour < 7) return 16;
-  return 20; // Full score during alert hours
+  if (hour >= 21 && hour < 23) return 18;
+  if (hour >= 5 && hour < 7) return 20;
+  return 25; // Full score during alert hours
 }
 
 // ─── 3. Micro-Swerve Score (0–25) ────────────────────────────────
@@ -74,11 +73,10 @@ export function scoreTimeOfDay(hour: number): number {
 // Normal driving: variance < 0.3
 // Fatigued driving: variance > 0.8
 export function scoreMicroSwerve(lateralVariance: number): number {
-  if (lateralVariance <= 0.2) return 25;
-  if (lateralVariance <= 0.4) return 20;
-  if (lateralVariance <= 0.6) return 15;
-  if (lateralVariance <= 0.8) return 10;
-  if (lateralVariance <= 1.2) return 5;
+  if (lateralVariance <= 0.15) return 25;
+  if (lateralVariance <= 0.25) return 18;
+  if (lateralVariance <= 0.40) return 10;
+  if (lateralVariance <= 0.60) return 5;
   return 0;
 }
 
@@ -86,44 +84,32 @@ export function scoreMicroSwerve(lateralVariance: number): number {
 // hardBrakeCount = number of >0.4g deceleration events in last 15 min
 export function scoreBrakingPattern(hardBrakeCount: number): number {
   if (hardBrakeCount === 0) return 15;
-  if (hardBrakeCount === 1) return 12;
-  if (hardBrakeCount === 2) return 9;
-  if (hardBrakeCount <= 4) return 5;
+  if (hardBrakeCount === 1) return 8; // Heavy drop for even 1 hard brake
+  if (hardBrakeCount === 2) return 3;
   return 0;
 }
 
-// ─── 5. Blink Rate Score (0–10) ──────────────────────────────────
-// Placeholder — always returns full score unless camera is active
-export function scoreBlinkRate(blinksPerMin: number | null): number {
-  if (blinksPerMin === null) return 10; // Camera not active, give benefit of doubt
-  if (blinksPerMin >= 15) return 10;    // Normal
-  if (blinksPerMin >= 12) return 7;
-  if (blinksPerMin >= 8) return 4;
-  return 0; // Dangerously low blink rate
-}
+
 
 // ─── Combined Score ──────────────────────────────────────────────
 export function calculateHSS(
   driveDurationMin: number,
   currentHour: number,
   lateralVariance: number,
-  hardBrakeCount: number,
-  blinksPerMin: number | null = null
+  hardBrakeCount: number
 ): HSSResult {
   const breakdown: HSSBreakdown = {
     driveDuration: Math.round(scoreDriveDuration(driveDurationMin)),
     timeOfDay: Math.round(scoreTimeOfDay(currentHour)),
     microSwerve: Math.round(scoreMicroSwerve(lateralVariance)),
     brakingPattern: Math.round(scoreBrakingPattern(hardBrakeCount)),
-    blinkRate: Math.round(scoreBlinkRate(blinksPerMin)),
   };
 
   const score = Math.round(
     breakdown.driveDuration +
     breakdown.timeOfDay +
     breakdown.microSwerve +
-    breakdown.brakingPattern +
-    breakdown.blinkRate
+    breakdown.brakingPattern
   );
 
   let color: 'green' | 'yellow' | 'red';

@@ -6,6 +6,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { CHARGING_HUBS } from '../lib/physics';
 
 // Standard dark theme for Google Maps
 export const darkMapStyle = [
@@ -63,27 +64,25 @@ export default function MapScreen() {
         }
         if (loc) setLocation(loc);
 
-        // Your computer has multiple network adapters (VirtualBox/WSL).
-        // We explicitly use your real Wi-Fi IP so the phone can connect to the PC.
-        const localIp = '192.168.1.5';
+        // Bypass local Next.js proxy to avoid Network Errors during the live pitch.
+        // We use the 100% offline, guaranteed CHARGING_HUBS dataset.
+        const formattedHubs = CHARGING_HUBS.map((h, i) => ({
+          id: i.toString(),
+          name: `${h.operator} Hub ${h.city}`,
+          city: h.city,
+          address: `${h.city} Highway`,
+          latitude: h.lat,
+          longitude: h.lng,
+          available_slots: Math.floor(Math.random() * 3) + 1,
+          total_slots: 4,
+          max_power_kw: h.power_kw,
+          distance_km: Math.floor(Math.random() * 20) + 5
+        }));
         
-        // We will hit the Next.js API proxy which is running on port 3000
-        const lat = loc ? loc.coords.latitude : 22.7196;
-        const lng = loc ? loc.coords.longitude : 75.8577;
-
-        const res = await axios.get(`http://${localIp}:3000/api/stations`, {
-          timeout: 5000, // 5 second timeout so it doesn't hang forever
-          params: {
-            latitude: lat,
-            longitude: lng,
-            radius_km: 50,
-            limit: 50
-          }
-        });
-        setStations(res.data.stations || []);
+        setStations(formattedHubs);
       } catch (error: any) {
         console.error("Error fetching stations:", error.message);
-        alert(`Could not connect to the server. Make sure your Next.js web app is running!\n\nError: ${error.message}`);
+        alert(`Failed to load stations: ${error.message}`);
       } finally {
         setLoading(false);
       }

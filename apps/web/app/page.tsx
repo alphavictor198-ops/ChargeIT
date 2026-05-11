@@ -39,25 +39,25 @@ export default function LandingPage() {
             <span
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
               style={{
-                background: "rgba(0,255,157,0.1)",
-                border: "1px solid rgba(0,255,157,0.3)",
-                color: "#00ff9d",
+                background: "rgba(255,107,26,0.1)",
+                border: "1px solid rgba(255,107,26,0.3)",
+                color: "#ff6b1a",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00ff9d] animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ff6b1a] animate-pulse" />
               Live across 120+ Indian cities
             </span>
 
             <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
               <span className="text-white">India&apos;s EV Charging</span>
               <br />
-              <span className="gradient-text">Intelligence Layer</span>
+              <span className="gradient-text">Journey OS</span>
             </h1>
 
             <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed">
               Not just a locator. GatiCharge uses physics-based range prediction,
-              Erlang-C queuing theory, and Monte Carlo simulations to plan your
-              perfect EV journey across India.
+              human fatigue monitoring, and passenger-aware planning to power 
+              your next adventure.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -99,7 +99,7 @@ export default function LandingPage() {
                   className="stat-card p-6 text-center"
                   transition={{ delay: i * 0.1 }}
                 >
-                  <Icon className="w-6 h-6 mx-auto mb-2" style={{ color: "#00ff9d" }} />
+                  <Icon className="w-6 h-6 mx-auto mb-2" style={{ color: "#ff6b1a" }} />
                   <div className="text-2xl font-black text-white">{stat.value}</div>
                   <div className="text-xs text-slate-500 mt-1">{stat.label}</div>
                 </motion.div>

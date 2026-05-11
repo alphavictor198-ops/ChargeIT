@@ -9,19 +9,21 @@ import {
   getPostHaltNudge, PostHaltNudge, PassengerProfile, getMaxDriveMinutes, getPassengerStopMessage
 } from '../lib/humanStateEngine';
 import { CHARGING_HUBS } from '../lib/physics';
+import { useVehicle } from '../lib/VehicleContext';
 
 type RouteParams = { passengers: string[] };
 
 export default function ActiveTripScreen() {
   const route = useRoute<RouteProp<{ ActiveTrip: RouteParams }, 'ActiveTrip'>>();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const { spec, batteryPercent: initialBattery } = useVehicle();
   const passengers = (route.params?.passengers || ['solo']) as PassengerProfile[];
 
   // ─── State ───────────────────────────────────────────────
   const [tripStartTime] = useState(Date.now());
   const [driveDurationMin, setDriveDurationMin] = useState(0);
-  const [batteryPercent, setBatteryPercent] = useState(82);
-  const [rangeKm, setRangeKm] = useState(315);
+  const [batteryPercent, setBatteryPercent] = useState(initialBattery);
+  const [rangeKm, setRangeKm] = useState(Math.round((initialBattery * spec.battery_kwh * 10) / spec.efficiency_wh_per_km));
 
   const [hssResult, setHssResult] = useState<HSSResult>({
     score: 100, color: 'green', status: 'Sharp & Alert',
@@ -48,12 +50,12 @@ export default function ActiveTripScreen() {
 
   // ─── Accelerometer Listener ──────────────────────────────
   useEffect(() => {
-    Accelerometer.setUpdateInterval(2000); // Every 2 seconds
+    Accelerometer.setUpdateInterval(100); // 10 samples per second for high-fidelity detection
     const sub = Accelerometer.addListener(data => {
       // Lateral swerve = Y-axis movement
       accelSamples.current.push(Math.abs(data.y));
-      // Keep only last 30 samples (1 minute of data)
-      if (accelSamples.current.length > 30) accelSamples.current.shift();
+      // Keep only last 100 samples (10 seconds of data for responsive swerve tracking)
+      if (accelSamples.current.length > 100) accelSamples.current.shift();
 
       // Hard brake detection = sudden Z-axis spike (> 0.4g change)
       if (Math.abs(data.z - 1.0) > 0.4) {
@@ -75,11 +77,19 @@ export default function ActiveTripScreen() {
       const elapsed = Math.floor((Date.now() - tripStartTime) / 60000);
       setDriveDurationMin(elapsed);
 
-      // Simulate battery drain (0.15% per minute at highway speed)
-      const drain = elapsed * 0.15;
-      const currentBattery = Math.max(5, 82 - drain);
+      // Simulate battery drain based on vehicle efficiency (Wh/km)
+      // At highway speed (65km/h), drain per minute is (efficiency * 65 / 60) Wh.
+      const whPerMin = (spec.efficiency_wh_per_km * 65) / 60;
+      const totalWhConsumed = whPerMin * elapsed;
+      const socDrain = (totalWhConsumed / (spec.battery_kwh * 1000)) * 100;
+      
+      const currentBattery = Math.max(2, initialBattery - socDrain);
       setBatteryPercent(Math.round(currentBattery));
-      setRangeKm(Math.round(currentBattery * 3.84)); // 315km at 82%
+      
+      // Dynamic range calculation
+      const usableKwh = spec.battery_kwh * (currentBattery / 100);
+      const estRange = (usableKwh * 1000) / spec.efficiency_wh_per_km;
+      setRangeKm(Math.round(estRange));
 
       // Calculate lateral variance from accelerometer
       const samples = accelSamples.current;
@@ -123,9 +133,9 @@ export default function ActiveTripScreen() {
       if (hss.score < 50 && stop.triggered && !hasSpoken.current) {
         hasSpoken.current = true;
         Vibration.vibrate([500, 200, 500, 200, 500]); // Pulsing vibration
-        
+
         Speech.speak(
-          `Attention driver. Your biological score is low. ${stop.message}. We recommend a synchronized charging stop at ${stop.stationName}, ${stop.stationDistanceKm} kilometers ahead. Please navigate there now.`, 
+          `Attention driver. Your biological score is low. ${stop.message}. We recommend a synchronized charging stop at ${stop.stationName}, ${stop.stationDistanceKm} kilometers ahead. Please navigate there now.`,
           { rate: 0.95, pitch: 1.0 }
         );
       }
@@ -164,7 +174,7 @@ export default function ActiveTripScreen() {
   };
 
   const handleEndTrip = () => {
-    navigation.navigate('TripSummary', {
+    navigation.replace('TripSummary', {
       totalDistanceKm: Math.round(driveDurationMin * 1.1), // rough estimate
       totalDurationMin: driveDurationMin,
       chargingStopsTaken: 0,
@@ -237,10 +247,6 @@ export default function ActiveTripScreen() {
           <Text style={styles.breakdownLabel}>🛑 Braking Pattern</Text>
           <Text style={styles.breakdownValue}>{hssResult.breakdown.brakingPattern}/15</Text>
         </View>
-        <View style={styles.breakdownRow}>
-          <Text style={styles.breakdownLabel}>👁 Blink Rate</Text>
-          <Text style={styles.breakdownValue}>{hssResult.breakdown.blinkRate}/10</Text>
-        </View>
       </View>
 
       {/* Passenger Info */}
@@ -282,9 +288,9 @@ export default function ActiveTripScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>🅿️ Halt Mode Active</Text>
             {haltNudge && (
-              <View style={[styles.nudgeCard, 
-                haltNudge.type === 'optimal' && styles.nudgeOptimal,
-                haltNudge.type === 'warning' && styles.nudgeWarning,
+              <View style={[styles.nudgeCard,
+              haltNudge.type === 'optimal' && styles.nudgeOptimal,
+              haltNudge.type === 'warning' && styles.nudgeWarning,
               ]}>
                 <Text style={styles.nudgeText}>{haltNudge.message}</Text>
                 <Text style={styles.nudgeTime}>{haltNudge.minutesStopped} min stopped</Text>

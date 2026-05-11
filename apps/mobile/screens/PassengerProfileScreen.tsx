@@ -32,7 +32,7 @@ export default function PassengerProfileScreen() {
   };
 
   const handleContinue = () => {
-    navigation.navigate('ActiveTrip', { passengers: Array.from(selected) });
+    navigation.navigate('RoutePlanner', { passengers: Array.from(selected) });
   };
 
   return (
@@ -62,7 +62,7 @@ export default function PassengerProfileScreen() {
         </View>
 
         <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
-          <Text style={styles.btnText}>Start Trip</Text>
+          <Text style={styles.btnText}>Continue to Route Planner</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -70,26 +70,26 @@ export default function PassengerProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#060b18' },
+  container: { flex: 1, backgroundColor: '#060404' },
   header: { paddingTop: 50, paddingHorizontal: 20 },
-  backText: { color: '#0ea5e9', fontSize: 16, fontWeight: 'bold' },
+  backText: { color: '#ff6b1a', fontSize: 16, fontWeight: 'bold' },
   content: { padding: 20, paddingTop: 10 },
   title: { color: 'white', fontSize: 26, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { color: '#94a3b8', fontSize: 14, marginBottom: 30 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   profileCard: {
-    width: '48%', backgroundColor: '#0d1526', borderRadius: 15, padding: 20,
+    width: '48%', backgroundColor: '#0a0806', borderRadius: 15, padding: 20,
     alignItems: 'center', marginBottom: 15,
-    borderWidth: 2, borderColor: '#1a2744',
+    borderWidth: 2, borderColor: 'rgba(255,107,26,0.15)',
   },
-  profileCardActive: { borderColor: '#00ff9d', backgroundColor: '#0d1f26' },
+  profileCardActive: { borderColor: '#ffaa44', backgroundColor: 'rgba(255,107,26,0.1)' },
   profileIcon: { fontSize: 36, marginBottom: 8 },
   profileLabel: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  profileLabelActive: { color: '#00ff9d' },
+  profileLabelActive: { color: '#ffaa44' },
   profileDesc: { color: '#94a3b8', fontSize: 11, textAlign: 'center' },
   btnPrimary: {
-    backgroundColor: '#00ff9d', borderRadius: 12, padding: 18,
+    backgroundColor: '#ff6b1a', borderRadius: 12, padding: 18,
     alignItems: 'center', marginTop: 20,
   },
-  btnText: { color: '#060b18', fontSize: 18, fontWeight: 'bold' },
+  btnText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });

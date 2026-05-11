@@ -66,8 +66,8 @@ export function haversineKm(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** India road factor — roads are not straight lines */
-export const ROAD_FACTOR = 1.22; // ~22% more than crow-flies
+/** India road factor — modern NH highways are fairly direct */
+export const ROAD_FACTOR = 1.05; // ~5% more than crow-flies
 
 /**
  * Physics-based power consumption in kW.
@@ -224,11 +224,14 @@ export interface RoutePlan {
 export const CHARGING_HUBS: { city: string; operator: string; lat: number; lng: number; power_kw: number; wait_min: number }[] = [
   // North India
   { city: "Delhi",        operator: "Tata Power",   lat: 28.6139, lng: 77.2090, power_kw: 150, wait_min: 15 },
+  { city: "Gurgaon",      operator: "Statiq",       lat: 28.4595, lng: 77.0266, power_kw: 60,  wait_min: 10 },
+  { city: "Neemrana",     operator: "ChargeZone",   lat: 28.0061, lng: 76.3860, power_kw: 50,  wait_min: 5  },
+  { city: "Kotputli",     operator: "Tata Power",   lat: 27.7042, lng: 76.1952, power_kw: 50,  wait_min: 5  },
+  { city: "Jaipur",       operator: "Statiq",       lat: 26.9124, lng: 75.7873, power_kw: 60,  wait_min: 10 },
   { city: "Mathura",      operator: "Tata Power",   lat: 27.4924, lng: 77.6737, power_kw: 50,  wait_min: 5  },
   { city: "Agra",         operator: "Statiq",       lat: 27.1767, lng: 78.0081, power_kw: 60,  wait_min: 10 },
   { city: "Gwalior",      operator: "ChargeZone",   lat: 26.2183, lng: 78.1828, power_kw: 50,  wait_min: 8  },
   { city: "Jhansi",       operator: "BPCL",         lat: 25.4484, lng: 78.5685, power_kw: 50,  wait_min: 5  },
-  { city: "Jaipur",       operator: "Statiq",       lat: 26.9124, lng: 75.7873, power_kw: 60,  wait_min: 10 },
   { city: "Ajmer",        operator: "BPCL",         lat: 26.4499, lng: 74.6399, power_kw: 50,  wait_min: 8  },
   { city: "Jodhpur",      operator: "Tata Power",   lat: 26.2389, lng: 73.0243, power_kw: 50,  wait_min: 10 },
   { city: "Udaipur",      operator: "ChargeZone",   lat: 24.5854, lng: 73.7125, power_kw: 50,  wait_min: 8  },
@@ -308,18 +311,45 @@ export const CHARGING_HUBS: { city: string; operator: string; lat: number; lng: 
   { city: "Krishnagiri",  operator: "Tata Power",   lat: 12.5186, lng: 78.2137, power_kw: 50,  wait_min: 5  },
 ];
 
-export function planRoute(
+/** Fetch real road distance (km) and duration (min) from OSRM */
+export async function getOSRMDistance(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): Promise<{ distanceKm: number; durationMin: number }> {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.routes && data.routes.length > 0) {
+      return {
+        distanceKm: +(data.routes[0].distance / 1000).toFixed(1),
+        durationMin: +(data.routes[0].duration / 60).toFixed(0),
+      };
+    }
+  } catch (e) {
+    console.log("OSRM fetch failed, falling back to estimate");
+  }
+  // Fallback to estimate if OSRM fails
+  const crow = haversineKm(lat1, lng1, lat2, lng2);
+  return { distanceKm: +(crow * ROAD_FACTOR).toFixed(1), durationMin: +(crow / 60 * 60).toFixed(0) };
+}
+
+export async function planRoute(
   originLat: number, originLng: number,
   destLat: number, destLng: number,
   spec: VehicleSpec,
   startSoc: number,
-  minArrivalSoc = 15,
+  availableHubs: any[] = CHARGING_HUBS,
+  minArrivalSoc = 5,
   speedKmh = 65,
   tempCelsius = 28
-): RoutePlan {
+): Promise<RoutePlan> {
   const crowKm = haversineKm(originLat, originLng, destLat, destLng);
-  const roadKm = +(crowKm * ROAD_FACTOR).toFixed(1);
   const warnings: string[] = [];
+
+  // ── Step 1: Get REAL road distance from OSRM (not guesswork) ──
+  const osrm = await getOSRMDistance(originLat, originLng, destLat, destLng);
+  const roadKm = osrm.distanceKm;
 
   const direct = predictTripSegment(spec, roadKm, startSoc, speedKmh, tempCelsius);
   const avgSpeed = roadKm > 300 ? 65 : roadKm > 100 ? 60 : 50;
@@ -327,7 +357,7 @@ export function planRoute(
 
   if (startSoc < 30) warnings.push("Low starting SOC — charging stop likely needed sooner");
 
-  // No stops needed
+  // No stops needed — battery can cover the real road distance
   if (direct.arrival_soc >= minArrivalSoc) {
     const mc = monteCarloSoc(spec, roadKm, startSoc, speedKmh, tempCelsius);
     if (mc.failureProb > 0.1) warnings.push(`${Math.round(mc.failureProb * 100)}% chance of running out`);
@@ -338,12 +368,15 @@ export function planRoute(
     };
   }
 
-  // A* Graph Search for absolute optimal route (shortest distance + minimum stops)
+  // ── Step 2: A* Graph Search for optimal charging stops ──
   interface AStarNode { id: string; lat: number; lng: number; hub?: any; }
   const nodes: Map<string, AStarNode> = new Map();
   nodes.set("origin", { id: "origin", lat: originLat, lng: originLng });
   nodes.set("dest", { id: "dest", lat: destLat, lng: destLng });
-  CHARGING_HUBS.forEach(h => nodes.set(h.city, { id: h.city, lat: h.lat, lng: h.lng, hub: h }));
+  availableHubs.forEach((h, idx) => {
+    const uid = `hub_${idx}_${h.lat}_${h.lng}`;
+    nodes.set(uid, { id: uid, lat: h.lat, lng: h.lng, hub: h });
+  });
 
   const gScore = new Map<string, number>();
   const fScore = new Map<string, number>();
@@ -393,8 +426,8 @@ export function planRoute(
 
       // Check if reachable
       if (distRoad <= rangeKm) {
-        // Penalty for making a stop (equivalent to 50 km) to prefer fewer stops
-        const stopPenalty = neighborId === "dest" ? 0 : 50;
+        // Penalty for making a stop (equivalent to 15 km) to prefer fewer stops
+        const stopPenalty = neighborId === "dest" ? 0 : 15;
         const tentativeG = gScore.get(currentId)! + distRoad + stopPenalty;
 
         if (tentativeG < gScore.get(neighborId)!) {

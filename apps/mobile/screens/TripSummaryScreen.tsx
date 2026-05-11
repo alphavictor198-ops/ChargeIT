@@ -177,16 +177,16 @@ export default function TripSummaryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#060b18', padding: 15 },
-  cardWrapper: { backgroundColor: '#0d1526', borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#1a2744' },
+  container: { flex: 1, backgroundColor: '#060404', padding: 15 },
+  cardWrapper: { backgroundColor: '#0a0806', borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,107,26,0.15)' },
 
-  header: { padding: 25, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1a2744' },
+  header: { padding: 25, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255,107,26,0.15)' },
   headerEmoji: { fontSize: 40, marginBottom: 10 },
   headerTitle: { color: 'white', fontSize: 26, fontWeight: 'bold' },
   headerSubtitle: { color: '#94a3b8', fontSize: 14, marginTop: 5, textAlign: 'center' },
 
-  section: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#1a2744' },
-  sectionTitle: { color: '#0ea5e9', fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
+  section: { padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,107,26,0.15)' },
+  sectionTitle: { color: '#ffaa44', fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   statItem: { width: '50%', marginBottom: 15 },
@@ -207,15 +207,15 @@ const styles = StyleSheet.create({
   chartBar: { width: 12, borderRadius: 6, minHeight: 10 },
   chartLabel: { color: '#475569', fontSize: 9, marginTop: 4 },
 
-  insightText: { color: '#fbbf24', fontSize: 14, fontStyle: 'italic', lineHeight: 20 },
+  insightText: { color: '#ffd080', fontSize: 14, fontStyle: 'italic', lineHeight: 20 },
 
   branding: { padding: 15, alignItems: 'center' },
-  brandText: { color: '#00ff9d', fontSize: 18, fontWeight: 'bold' },
+  brandText: { color: '#ff6b1a', fontSize: 18, fontWeight: 'bold' },
   brandSub: { color: '#94a3b8', fontSize: 11 },
 
   actions: { marginTop: 20 },
-  btnShare: { backgroundColor: '#1a2744', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 10 },
+  btnShare: { backgroundColor: 'rgba(255,107,26,0.1)', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,107,26,0.3)' },
   btnShareText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  btnDone: { backgroundColor: '#00ff9d', borderRadius: 12, padding: 16, alignItems: 'center' },
-  btnDoneText: { color: '#060b18', fontSize: 16, fontWeight: 'bold' },
+  btnDone: { backgroundColor: '#ff6b1a', borderRadius: 12, padding: 16, alignItems: 'center' },
+  btnDoneText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });

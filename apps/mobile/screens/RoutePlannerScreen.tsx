@@ -5,13 +5,15 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import axios from 'axios';
 import { darkMapStyle } from './MapScreen';
 import { planRoute, VEHICLE_SPECS, RoutePlan, haversineKm, CHARGING_HUBS } from '../lib/physics';
+import { useVehicle } from '../lib/VehicleContext';
 
 type RootStackParamList = {
   Map: undefined;
   RoutePlanner: { 
     originLoc?: { lat: number, lng: number },
     destLoc?: { lat: number, lng: number },
-    destName?: string 
+    destName?: string,
+    passengers?: string[]
   } | undefined;
 };
 
@@ -20,6 +22,7 @@ type RoutePlannerRouteProp = RouteProp<RootStackParamList, 'RoutePlanner'>;
 export default function RoutePlannerScreen() {
   const route = useRoute<RoutePlannerRouteProp>();
   const navigation = useNavigation();
+  const { spec, batteryPercent } = useVehicle();
   
   // Params might be undefined if opened from Dashboard
   const params = route.params || {};
@@ -99,55 +102,10 @@ export default function RoutePlannerScreen() {
   };
 
   const fetchHubsAlongRoute = async (start: {lat: number, lng: number}, end: {lat: number, lng: number}) => {
-    const distance = haversineKm(start.lat, start.lng, end.lat, end.lng);
-    const numPoints = Math.max(1, Math.ceil(distance / 150));
-    const points = [];
-    
-    // Generate waypoints every ~150km along the straight line
-    for (let i = 0; i <= numPoints; i++) {
-      const fraction = i / numPoints;
-      points.push({
-        lat: start.lat + (end.lat - start.lat) * fraction,
-        lng: start.lng + (end.lng - start.lng) * fraction
-      });
-    }
-
-    let allHubs: any[] = [];
-    const localIp = '192.168.1.5';
-    
-    // Fetch stations concurrently for all waypoints from our Next.js API (which wraps OpenChargeMap + AI)
-    await Promise.all(points.map(async (pt) => {
-      try {
-        const res = await axios.get(`http://${localIp}:3000/api/stations`, {
-          params: { latitude: pt.lat, longitude: pt.lng, radius_km: 100, limit: 20 }
-        });
-        if (res.data && res.data.stations) {
-          const formatted = res.data.stations.map((st: any) => ({
-            city: st.city || st.name.substring(0, 15),
-            operator: st.operator || 'FastCharge',
-            lat: st.latitude,
-            lng: st.longitude,
-            power_kw: st.max_power_kw || 50,
-            wait_min: 5
-          }));
-          allHubs = [...allHubs, ...formatted];
-        }
-      } catch (e) {
-        console.log("Error fetching dynamic stations at point", pt);
-      }
-    }));
-
-    // Deduplicate hubs by coordinates
-    const uniqueHubs = [];
-    const seen = new Set();
-    for (const h of allHubs) {
-      const key = `${h.lat.toFixed(3)},${h.lng.toFixed(3)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        uniqueHubs.push(h);
-      }
-    }
-    return uniqueHubs;
+    // For the hackathon demo, we completely bypass the local Next.js proxy
+    // to prevent any timeouts or "Network Error" crashes.
+    // The engine will automatically fall back to the massive CHARGING_HUBS array!
+    return [];
   };
 
   const handlePlanRoute = async () => {
@@ -191,13 +149,12 @@ export default function RoutePlannerScreen() {
       const dynamicHubs = await fetchHubsAlongRoute(finalOrigin, finalDest);
       const allAvailableHubs = [...CHARGING_HUBS, ...dynamicHubs];
 
-      // 2. Calculate physics and charging stops using dynamic + static hubs
-      const startSoc = 82; // Simulated battery
-      const plan = planRoute(
+      // 2. Calculate physics and charging stops using real OSRM distances
+      const plan = await planRoute(
         finalOrigin.lat, finalOrigin.lng, 
         finalDest.lat, finalDest.lng, 
-        VEHICLE_SPECS.nexon_ev, 
-        startSoc,
+        spec, 
+        batteryPercent,
         allAvailableHubs // Inject all combined stations!
       );
       setRoutePlan(plan);
@@ -209,7 +166,7 @@ export default function RoutePlannerScreen() {
       });
       coordsString += `;${finalDest.lng},${finalDest.lat}`;
 
-      const url = `http://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+      const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
       const res = await axios.get(url);
       
       if (res.data.routes && res.data.routes.length > 0) {
@@ -237,11 +194,17 @@ export default function RoutePlannerScreen() {
       waypointsParam = `&waypoints=${wpCoords}`;
     }
 
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${originLoc.lat},${originLoc.lng}&destination=${destLoc.lat},${destLoc.lng}&travelmode=driving${waypointsParam}`;
+    // Omit origin to default to 'My Location', which enables the 'Start' button for turn-by-turn navigation
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destLoc.lat},${destLoc.lng}&travelmode=driving${waypointsParam}`;
     
     Linking.openURL(url).catch(() => {
       alert("Couldn't open Google Maps");
     });
+    
+    // Seamlessly transition the app into Live Hardware tracking mode in the background
+    // so when they swipe back from Google Maps, the app is running the pitch demo!
+    const passengers = params.passengers || ['solo'];
+    (navigation as any).replace('ActiveTrip', { passengers });
   };
 
   return (
@@ -256,9 +219,9 @@ export default function RoutePlannerScreen() {
         </View>
 
         <View style={styles.vehicleInfo}>
-          <Text style={styles.vehicleText}>Tata Nexon EV</Text>
+          <Text style={styles.vehicleText}>{spec.name}</Text>
           <View style={styles.batteryBadge}>
-            <Text style={styles.batteryText}>🔋 82% (Est. Range: 315 km)</Text>
+            <Text style={styles.batteryText}>🔋 {batteryPercent}% (Range: {Math.round((spec.battery_kwh * (batteryPercent/100) * 1000) / spec.efficiency_wh_per_km)} km)</Text>
           </View>
         </View>
 
