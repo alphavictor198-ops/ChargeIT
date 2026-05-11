@@ -1,3 +1,4 @@
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking, Vibration, Animated } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -442,7 +443,22 @@ export default function ActiveTripScreen() {
           <TouchableOpacity style={[styles.feelingBtn, { backgroundColor: '#44ffb2' }]} onPress={() => handleFeelingResponse('sharp')}>
             <Text style={styles.feelingBtnText}>✅ Sharp</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.feelingBtn, { backgroundColor: '#ffdd44' }]}   container: { flex: 1, padding: 20 },
+          <TouchableOpacity style={[styles.feelingBtn, { backgroundColor: '#ffdd44' }]} onPress={() => handleFeelingResponse('okay')}>
+            <Text style={styles.feelingBtnText}>🟡 Okay</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.feelingBtn, { backgroundColor: '#ff4455' }]} onPress={() => handleFeelingResponse('tired')}>
+            <Text style={styles.feelingBtnText}>🔴 Still Tired</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
   header: { paddingTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: 2 },
