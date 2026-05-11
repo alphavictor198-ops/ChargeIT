@@ -1,23 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Easing, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getTrips, TripRecord, getPatternInsight } from '../lib/tripStore';
 import { useVehicle } from '../lib/VehicleContext';
 import { VEHICLE_SPECS } from '../lib/physics';
-import { CarFront, Battery, Zap, Timer, Activity } from 'lucide-react-native';
+import { Battery, Zap, Timer, Activity } from 'lucide-react-native';
 
 const VEHICLE_LIST = Object.values(VEHICLE_SPECS);
-
-const CSSCar = () => (
-  <View style={styles.cssCarBody}>
-    <View style={styles.cssCarRoof} />
-    <View style={styles.cssCarWindshield} />
-    <View style={styles.cssCarHeadlightLeft} />
-    <View style={styles.cssCarHeadlightRight} />
-    <View style={styles.cssCarSpoiler} />
-  </View>
-);
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -100,7 +90,11 @@ export default function DashboardScreen() {
               { rotateY: spin }
             ] 
           }}>
-            <CSSCar />
+            <Image 
+              source={require('../assets/car_model.png')} 
+              style={{ width: 140, height: 140 }} 
+              resizeMode="contain" 
+            />
           </Animated.View>
           <View style={styles.scanningRing} />
         </View>
