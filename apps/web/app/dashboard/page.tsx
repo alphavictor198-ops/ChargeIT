@@ -131,72 +131,58 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ─ Gauge + Range ──────────────────────────────────── */}
-          <div className="glass-card p-5 flex flex-col items-center">
-            <h2 className="font-bold text-white mb-4 self-start">Range Prediction</h2>
-            <SocGauge soc={soc} />
-
-            <div className="mt-5 text-center">
-              <motion.div
-                key={displayRange}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-5xl font-black text-white"
-              >
-                {displayRange}
-                <span className="text-2xl text-slate-400 ml-1">km</span>
-              </motion.div>
-              <div className="text-sm text-slate-400 mt-1">Estimated Range</div>
-              <div className="text-xs text-slate-600 mt-1">{livePhysics.efficiency} Wh/km at {speed} km/h</div>
+          {/* ─ Rotating Car HUD ──────────────────────────────────── */}
+          <div className="glass-card p-5 flex flex-col items-center relative overflow-hidden">
+            <div className="hud-scanner" />
+            <h2 className="font-bold text-white mb-4 self-start tracking-widest text-xs opacity-60">VEHICLE SCANNER</h2>
+            
+            <div className="rotating-car-container relative">
+              <div className="neon-ring" />
+              <div className="rotating-car">
+                <Car className="w-24 h-24 text-[#ffaa44]" strokeWidth={1.2} />
+              </div>
             </div>
 
-            {/* Backend confidence intervals */}
-            {backendResult && (
-              <div className="w-full mt-5 space-y-2">
-                <div className="text-xs text-slate-500 mb-2 font-semibold">Backend Confidence Interval</div>
-                {[
-                  { l: "Conservative", v: backendResult.confidence_interval.low_km,  c: "#ef4444" },
-                  { l: "Expected",     v: backendResult.confidence_interval.mid_km,  c: "#00ff9d" },
-                  { l: "Optimistic",   v: backendResult.confidence_interval.high_km, c: "#00d4ff" },
-                ].map(r => (
-                  <div key={r.l} className="flex justify-between text-xs">
-                    <span className="text-slate-500">{r.l}</span>
-                    <span className="font-semibold" style={{ color: r.c }}>{r.v} km</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Live warnings */}
-            <div className="w-full mt-4 space-y-2">
-              {livePhysics.warnings.map((w, i) => (
-                <div key={i} className="flex items-start gap-2 p-2 rounded-lg text-xs"
-                  style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#fbbf24] shrink-0 mt-0.5" />
-                  <span className="text-[#fbbf24]">{w}</span>
+            <div className="w-full text-center z-10">
+              <h3 className="text-xl font-black text-white tracking-widest uppercase mb-4">{spec.name}</h3>
+              
+              <div className="grid grid-cols-2 gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 mb-6">
+                <div className="flex flex-col items-center">
+                  <Battery className="w-4 h-4 text-[#44ffb2] mb-1" />
+                  <span className="text-2xl font-black text-white">{soc}%</span>
+                  <span className="text-[10px] font-bold text-slate-500 tracking-tighter">CHARGE</span>
                 </div>
-              ))}
+                <div className="flex flex-col items-center border-l border-white/10">
+                  <Zap className="w-4 h-4 text-[#ffaa44] mb-1" />
+                  <span className="text-2xl font-black text-white">{displayRange}</span>
+                  <span className="text-[10px] font-bold text-slate-500 tracking-tighter">EST. RANGE</span>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-500 mb-6 italic">
+                {spec.battery_kwh} kWh Battery · {livePhysics.efficiency} Wh/km avg.
+              </div>
             </div>
 
             {/* Map, Route Planner & Active Trip Buttons */}
-            <div className="w-full mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="w-full mt-auto grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link href="/stations" className="w-full">
-                <button className="btn-secondary w-full text-xs py-3 flex flex-col items-center justify-center gap-1.5" style={{ minHeight: "80px" }}>
-                  <span className="text-xl">🗺️</span>
+                <button className="btn-secondary w-full text-[10px] py-3 flex flex-col items-center justify-center gap-1.5" style={{ minHeight: "80px" }}>
+                  <MapPin className="w-4 h-4" />
                   Station Map
                 </button>
               </Link>
               <Link href="/route-planner" className="w-full">
-                <button className="btn-secondary w-full text-xs py-3 flex flex-col items-center justify-center gap-1.5" style={{ minHeight: "80px" }}>
-                  <span className="text-xl">🧭</span>
-                  Route Planner
+                <button className="btn-secondary w-full text-[10px] py-3 flex flex-col items-center justify-center gap-1.5" style={{ minHeight: "80px" }}>
+                  <TrendingUp className="w-4 h-4" />
+                  Optimizer
                 </button>
               </Link>
               <Link href="/active-trip" className="w-full">
-                <button className="w-full text-xs py-3 flex flex-col items-center justify-center gap-1.5 rounded-xl font-semibold transition-all" 
-                        style={{ minHeight: "80px", background: "rgba(0,255,157,0.1)", color: "#00ff9d", border: "1px solid rgba(0,255,157,0.3)" }}>
-                  <span className="text-xl">🚀</span>
-                  Live Trip
+                <button className="w-full text-[10px] py-3 flex flex-col items-center justify-center gap-1.5 rounded-xl font-bold transition-all" 
+                        style={{ minHeight: "80px", background: "rgba(255,107,26,0.1)", color: "#ff6b1a", border: "1px solid rgba(255,107,26,0.3)" }}>
+                  <Zap className="w-4 h-4" />
+                  Start HUD
                 </button>
               </Link>
             </div>

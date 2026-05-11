@@ -24,9 +24,14 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
+      <Animated.View style={[styles.logoContainer, { opacity: fadeAnim, transform: [{ scale: fadeAnim }] }]}>
+        <View style={styles.icon3DWrapper}>
+          <View style={styles.glowAura} />
+          <Text style={styles.boltIcon}>⚡</Text>
+        </View>
         <Text style={styles.logoText}>GatiCharge</Text>
-        <Text style={styles.tagline}>Powering the Future</Text>
+        <View style={styles.accentBar} />
+        <Text style={styles.tagline}>Powering India's EV Revolution</Text>
       </Animated.View>
     </View>
   );
@@ -35,31 +40,59 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#060b18',
+    backgroundColor: '#060404',
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    shadowColor: '#00ff9d',
+  },
+  icon3DWrapper: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  glowAura: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    backgroundColor: '#ffaa44',
+    borderRadius: 40,
+    shadowColor: '#ffaa44',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 20,
+    shadowOpacity: 1,
+    shadowRadius: 50,
+    elevation: 30,
+    opacity: 0.4,
+  },
+  boltIcon: {
+    fontSize: 80,
+    color: '#ffaa44',
+    textShadowColor: 'rgba(255, 170, 68, 1)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
   },
   logoText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#00ff9d',
-    letterSpacing: 2,
-    textShadowColor: '#00ff9d',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
+    fontSize: 42,
+    fontWeight: '900',
+    color: 'white',
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
+  accentBar: {
+    width: 60,
+    height: 4,
+    backgroundColor: '#ff6b1a',
+    marginTop: 10,
+    borderRadius: 2,
   },
   tagline: {
-    color: '#0ea5e9',
-    fontSize: 16,
-    marginTop: 10,
-    letterSpacing: 1,
+    color: '#94a3b8',
+    fontSize: 14,
+    marginTop: 15,
+    letterSpacing: 2,
+    fontWeight: '500',
   }
 });

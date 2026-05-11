@@ -93,48 +93,50 @@ export default function TripSummaryScreen() {
           <Text style={styles.headerSubtitle}>Here's what we learned about you today.</Text>
         </View>
 
-        {/* Section 1 — Journey Stats */}
+        {/* Section 1 — Journey Stats (Car Data) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Journey Stats</Text>
+          <Text style={styles.sectionTitle}>🚗 Car & Journey Stats</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{params.totalDistanceKm} km</Text>
-              <Text style={styles.statLabel}>Distance</Text>
+              <Text style={styles.statLabel}>Total Distance</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{params.totalDurationMin} min</Text>
-              <Text style={styles.statLabel}>Duration</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{params.chargingStopsTaken}</Text>
-              <Text style={styles.statLabel}>Charging Stops</Text>
+              <Text style={styles.statLabel}>Drive Duration</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{params.batteryStart}% → {params.batteryEnd}%</Text>
-              <Text style={styles.statLabel}>Battery Used</Text>
+              <Text style={styles.statLabel}>Battery (Start → End)</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{params.batteryStart - params.batteryEnd}%</Text>
+              <Text style={styles.statLabel}>Total SOC Consumed</Text>
             </View>
           </View>
         </View>
 
         {/* Section 2 — Human Performance */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Human Performance</Text>
+          <Text style={styles.sectionTitle}>🧠 Human Performance Score</Text>
           <View style={styles.bigScoreRow}>
             <View style={[styles.bigScoreCircle, { borderColor: scoreColor }]}>
               <Text style={[styles.bigScoreValue, { color: scoreColor }]}>{params.avgHumanScore}</Text>
-              <Text style={styles.bigScoreLabel}>avg</Text>
+              <Text style={styles.bigScoreLabel}>AVG SCORE</Text>
             </View>
             <View style={styles.perfDetails}>
-              {params.fatigueOnsetMin !== null && (
-                <Text style={styles.perfText}>😴 Fatigue first detected at: <Text style={styles.perfHighlight}>{params.fatigueOnsetMin} min</Text></Text>
+              {params.fatigueOnsetMin !== null ? (
+                <Text style={styles.perfText}>😴 Fatigue Onset: <Text style={styles.perfHighlight}>{params.fatigueOnsetMin} min</Text></Text>
+              ) : (
+                <Text style={styles.perfText}>✅ No Fatigue Detected</Text>
               )}
-              <Text style={styles.perfText}>🛑 Hard braking events: <Text style={styles.perfHighlight}>{params.hardBrakeEvents}</Text></Text>
-              <Text style={styles.perfText}>📉 Lowest score: <Text style={[styles.perfHighlight, { color: '#ef4444' }]}>{params.lowestHumanScore}</Text></Text>
+              <Text style={styles.perfText}>🛑 Hard Brakes: <Text style={styles.perfHighlight}>{params.hardBrakeEvents}</Text></Text>
+              <Text style={styles.perfText}>📉 Critical Low: <Text style={[styles.perfHighlight, { color: '#ef4444' }]}>{params.lowestHumanScore}</Text></Text>
             </View>
           </View>
 
           {/* Simple bar chart */}
-          <Text style={styles.chartTitle}>Alertness Over Trip</Text>
+          <Text style={styles.chartTitle}>Alertness Timeline (sampled every 5m)</Text>
           <View style={styles.chartContainer}>
             {graphBars.map((bar, i) => (
               <View key={i} style={styles.chartBarWrapper}>
@@ -150,7 +152,7 @@ export default function TripSummaryScreen() {
 
         {/* Section 3 — Pattern Insight */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔮 Pattern Insight (Trip #{tripCount})</Text>
+          <Text style={styles.sectionTitle}>🔮 Intelligence Insight (Trip #{tripCount})</Text>
           <Text style={styles.insightText}>{patternInsight}</Text>
         </View>
 

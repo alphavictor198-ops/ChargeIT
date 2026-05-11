@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getTrips, TripRecord, getPatternInsight } from '../lib/tripStore';
 import { useVehicle } from '../lib/VehicleContext';
 import { VEHICLE_SPECS } from '../lib/physics';
+import { Car, Battery, Zap, Timer, Activity } from 'lucide-react-native';
 
 const VEHICLE_LIST = Object.values(VEHICLE_SPECS);
 
@@ -14,12 +14,30 @@ export default function DashboardScreen() {
   const [recentTrips, setRecentTrips] = useState<TripRecord[]>([]);
   const [patternInsight, setPatternInsight] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
+  
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 8000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
 
   const handleConnect = () => {
     setIsDetecting(true);
     setTimeout(() => {
       setVehicleId('tiago_ev');
-      setBatteryPercent(64); // Simulate reading live SOC from OBD
+      setBatteryPercent(64); 
       setIsDetecting(false);
       setIsConnected(true);
     }, 2000);
@@ -35,14 +53,14 @@ export default function DashboardScreen() {
     return unsubscribe;
   }, [navigation]);
 
-  const hssColor = '#44ffb2'; // Default green when not driving
+  const hssColor = '#44ffb2'; 
 
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello</Text>
+          <Text style={styles.greeting}>Gati Dash</Text>
           <Text style={styles.date}>{new Date().toDateString()}</Text>
         </View>
         {!isConnected ? (
@@ -52,43 +70,54 @@ export default function DashboardScreen() {
             disabled={isDetecting}
           >
             <Text style={styles.connectBtnText}>
-              {isDetecting ? 'Connecting...' : 'CONNECT'}
+              {isDetecting ? 'SEARCHING...' : 'CONNECT'}
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.connectedBadge}>
             <View style={styles.connectedDot} />
-            <Text style={styles.connectedText}>Connected</Text>
+            <Text style={styles.connectedText}>V-Link Active</Text>
           </View>
         )}
       </View>
 
-      {/* Twin Gauges — Car + Human */}
-      <View style={styles.gaugeRow}>
-        <View style={styles.gaugeCard}>
-          <View style={[styles.gaugeCircle, { borderColor: '#ffaa44' }]}>
-            <Text style={styles.gaugeValue}>{isConnected ? `${batteryPercent}%` : '-- %'}</Text>
-          </View>
-          <Text style={styles.gaugeLabel}>🔋 Car Battery</Text>
-          <Text style={styles.gaugeSub}>{isConnected ? `${estimatedRange} km range` : '-- km range'}</Text>
+      {/* 3D Rotating Car Section */}
+      <View style={styles.carVisualizerSection}>
+        <View style={styles.visualizerBase}>
+          <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <Car color="#ffaa44" size={100} strokeWidth={1.5} />
+          </Animated.View>
+          <View style={styles.scanningRing} />
         </View>
-        <View style={styles.gaugeCard}>
-          <View style={[styles.gaugeCircle, { borderColor: hssColor }]}>
-            <Text style={[styles.gaugeValue, { color: hssColor }]}>—</Text>
+
+        <View style={styles.vehicleInfoHub}>
+          <Text style={styles.vehicleModelName}>{isConnected ? spec.name : 'NO VEHICLE LINKED'}</Text>
+          <View style={styles.mainStatsRow}>
+            <View style={styles.mainStat}>
+              <Battery color="#44ffb2" size={18} />
+              <Text style={styles.mainStatValue}>{isConnected ? `${batteryPercent}%` : '--%'}</Text>
+              <Text style={styles.mainStatLabel}>CHARGE</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.mainStat}>
+              <Zap color="#ffaa44" size={18} />
+              <Text style={styles.mainStatValue}>{isConnected ? `${estimatedRange} km` : '-- km'}</Text>
+              <Text style={styles.mainStatLabel}>RANGE</Text>
+            </View>
           </View>
-          <Text style={styles.gaugeLabel}>🧠 Human Score</Text>
-          <Text style={[styles.gaugeSub, { color: hssColor }]}>Start a trip to monitor</Text>
+          <Text style={styles.specSubText}>
+            {isConnected ? `${spec.battery_kwh} kWh Battery · ${spec.max_charge_rate_kw} kW DC Fast` : 'Hardware interface disconnected'}
+          </Text>
         </View>
       </View>
 
-      {/* Vehicle Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Vehicle Status</Text>
-        <Text style={styles.vehicleName}>{isConnected ? spec.name : 'Unknown Vehicle'}</Text>
-        <Text style={styles.vehicleStatus}>{isConnected ? 'Parked & Ready' : 'Disconnected'}</Text>
-        <Text style={styles.vehicleSpec}>
-          {isConnected ? `${spec.battery_kwh} kWh · ${spec.max_charge_rate_kw} kW max charge · ${spec.mass_kg} kg` : '--- kWh · --- kW · --- kg'}
-        </Text>
+      {/* Human Score Preview */}
+      <View style={styles.scorePreviewCard}>
+        <Activity color={hssColor} size={20} />
+        <View style={{ marginLeft: 15 }}>
+          <Text style={styles.scorePreviewTitle}>Biological State Monitoring</Text>
+          <Text style={styles.scorePreviewDesc}>System armed. Monitoring will begin on trip start.</Text>
+        </View>
       </View>
 
       {/* Quick Actions */}
@@ -195,75 +224,56 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#060404', padding: 20 },
-  header: { marginTop: 40, marginBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { fontSize: 28, fontWeight: 'bold', color: 'white' },
-  date: { fontSize: 14, color: '#94a3b8', marginTop: 5 },
+  header: { marginTop: 40, marginBottom: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  greeting: { fontSize: 28, fontWeight: '900', color: 'white', letterSpacing: 1 },
+  date: { fontSize: 13, color: '#94a3b8', marginTop: 4 },
 
-  connectBtn: { 
-    backgroundColor: '#ff6b1a', 
-    paddingHorizontal: 15, 
-    paddingVertical: 10, 
-    borderRadius: 10, 
-    borderBottomWidth: 4,
-    borderBottomColor: '#b34700',
-    shadowColor: '#ff6b1a', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.5, 
-    shadowRadius: 5, 
-    elevation: 8 
-  },
-  connectBtnText: { color: 'white', fontWeight: 'bold', fontSize: 12, letterSpacing: 1 },
-  connectedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(68,255,178,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(68,255,178,0.3)' },
+  connectBtn: { backgroundColor: '#ff6b1a', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, shadowColor: '#ff6b1a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+  connectBtnText: { color: 'white', fontWeight: 'bold', fontSize: 11, letterSpacing: 1 },
+  connectedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(68,255,178,0.05)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(68,255,178,0.2)' },
   connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#44ffb2', marginRight: 6 },
-  connectedText: { color: '#44ffb2', fontWeight: 'bold', fontSize: 12 },
+  connectedText: { color: '#44ffb2', fontWeight: 'bold', fontSize: 11, letterSpacing: 1 },
 
-  gaugeRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-  gaugeCard: { flex: 1, alignItems: 'center', backgroundColor: '#0a0806', borderRadius: 15, padding: 18, marginHorizontal: 5, borderWidth: 1, borderColor: 'rgba(255,107,26,0.15)' },
-  gaugeCircle: { width: 80, height: 80, borderRadius: 40, borderWidth: 6, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  gaugeValue: { color: 'white', fontSize: 24, fontWeight: 'bold' },
-  gaugeLabel: { color: 'white', fontSize: 13, fontWeight: 'bold' },
-  gaugeSub: { color: '#94a3b8', fontSize: 11, marginTop: 3, textAlign: 'center' },
+  carVisualizerSection: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 30, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 20 },
+  visualizerBase: { width: 180, height: 180, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  scanningRing: { position: 'absolute', width: 220, height: 120, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(255, 107, 26, 0.2)', transform: [{ scaleX: 1 }, { rotateX: '75deg' }] },
+  
+  vehicleInfoHub: { alignItems: 'center', width: '100%' },
+  vehicleModelName: { color: 'white', fontSize: 22, fontWeight: '900', letterSpacing: 1, marginBottom: 15 },
+  mainStatsRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 20, padding: 15, width: '100%', justifyContent: 'space-around' },
+  mainStat: { alignItems: 'center' },
+  mainStatValue: { color: 'white', fontSize: 20, fontWeight: 'bold', marginVertical: 4 },
+  mainStatLabel: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
+  statDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.1)' },
+  specSubText: { color: '#475569', fontSize: 11, marginTop: 15, fontWeight: '500' },
 
-  card: { backgroundColor: '#0a0806', borderRadius: 15, padding: 18, borderWidth: 1, borderColor: 'rgba(255,107,26,0.15)', marginBottom: 20 },
-  cardTitle: { color: '#ffaa44', fontSize: 13, opacity: 0.8 },
-  vehicleName: { color: 'white', fontSize: 20, fontWeight: 'bold', marginTop: 5 },
-  vehicleStatus: { color: '#44ffb2', fontSize: 14, marginTop: 3 },
-  vehicleSpec: { color: '#94a3b8', fontSize: 11, marginTop: 5 },
+  scorePreviewCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(68,255,178,0.05)', borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(68,255,178,0.1)' },
+  scorePreviewTitle: { color: 'white', fontSize: 15, fontWeight: 'bold' },
+  scorePreviewDesc: { color: '#94a3b8', fontSize: 12, marginTop: 4 },
 
-  vehiclePicker: { backgroundColor: '#0a0806', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,107,26,0.3)', marginBottom: 15, overflow: 'hidden' },
-  autoDetectBtn: { backgroundColor: '#1a2744', padding: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,107,26,0.2)', alignItems: 'center' },
-  autoDetectText: { color: '#0ea5e9', fontSize: 14, fontWeight: 'bold' },
-  vehicleOption: { padding: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,107,26,0.1)' },
-  vehicleOptionActive: { backgroundColor: 'rgba(255,107,26,0.15)' },
-  vehicleOptionText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  vehicleOptionTextActive: { color: '#ff6b1a' },
-  vehicleOptionSub: { color: '#94a3b8', fontSize: 12, marginTop: 3 },
-
-  sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 12, marginTop: 5 },
-
-  actionGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  actionBtnPrimary: { backgroundColor: '#ff6b1a', borderRadius: 15, padding: 18, flex: 1, marginRight: 5, height: 100, justifyContent: 'center' },
-  actionBtnSecondary: { backgroundColor: 'rgba(255,107,26,0.08)', borderRadius: 15, padding: 18, flex: 1, marginHorizontal: 5, height: 100, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,107,26,0.2)' },
-  actionBtnTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  sectionTitle: { color: 'white', fontSize: 18, fontWeight: '900', marginBottom: 15, marginTop: 5, letterSpacing: 1 },
+  actionGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  actionBtnPrimary: { backgroundColor: '#ff6b1a', borderRadius: 20, padding: 20, flex: 1, marginRight: 6, height: 110, justifyContent: 'center' },
+  actionBtnSecondary: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, padding: 20, flex: 1, marginLeft: 6, height: 110, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  actionBtnTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
   actionBtnDesc: { color: '#94a3b8', fontSize: 11 },
-  actionBtnTitleDark: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  actionBtnTitleDark: { color: 'white', fontSize: 17, fontWeight: '900', marginBottom: 5 },
   actionBtnDescDark: { color: 'white', fontSize: 11, opacity: 0.8 },
 
-  insightCard: { backgroundColor: '#120e0a', borderRadius: 15, padding: 18, borderWidth: 1, borderColor: '#ffd080', marginBottom: 20, marginTop: 15 },
-  insightTitle: { color: '#ffd080', fontSize: 14, fontWeight: 'bold', marginBottom: 8 },
-  insightText: { color: '#ffd080', fontSize: 13, fontStyle: 'italic', lineHeight: 20 },
+  insightCard: { backgroundColor: 'rgba(255,208,128,0.05)', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255,208,128,0.2)', marginBottom: 20 },
+  insightTitle: { color: '#ffd080', fontSize: 13, fontWeight: 'bold', letterSpacing: 1, marginBottom: 10 },
+  insightText: { color: '#ffd080', fontSize: 14, fontStyle: 'italic', lineHeight: 22 },
 
-  tripCard: { backgroundColor: '#0a0806', borderRadius: 12, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,107,26,0.15)' },
+  tripCard: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 15, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   tripRow: { flexDirection: 'row', alignItems: 'center' },
-  tripDate: { color: 'white', fontSize: 14, fontWeight: 'bold' },
-  tripStats: { color: '#94a3b8', fontSize: 12, marginTop: 3 },
+  tripDate: { color: 'white', fontSize: 15, fontWeight: 'bold' },
+  tripStats: { color: '#94a3b8', fontSize: 12, marginTop: 4 },
   tripScoreBadge: { width: 50, height: 50, borderRadius: 25, borderWidth: 3, justifyContent: 'center', alignItems: 'center' },
   tripScoreValue: { fontSize: 18, fontWeight: 'bold' },
 
-  featureCard: { backgroundColor: '#0a0806', borderRadius: 12, padding: 15, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,107,26,0.15)', flexDirection: 'row', alignItems: 'center' },
-  featureIcon: { fontSize: 28, marginRight: 15 },
-  featureTitle: { color: 'white', fontSize: 15, fontWeight: 'bold', marginBottom: 3 },
-  featureDesc: { color: '#94a3b8', fontSize: 12, lineHeight: 17 },
+  featureCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 15, padding: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
+  featureIcon: { fontSize: 32, marginRight: 20 },
+  featureTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  featureDesc: { color: '#94a3b8', fontSize: 13, lineHeight: 19 },
 });
