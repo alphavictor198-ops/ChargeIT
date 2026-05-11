@@ -16,23 +16,26 @@ export default function DashboardScreen() {
   const [patternInsight, setPatternInsight] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
   
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const breatheAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 8000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
+      Animated.sequence([
+        Animated.timing(breatheAnim, {
+          toValue: 1.05,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breatheAnim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        })
+      ])
     ).start();
   }, []);
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg']
-  });
 
   const handleConnect = () => {
     setIsDetecting(true);
@@ -81,18 +84,17 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* 3D Rotating Car Section */}
+      {/* 3D Realistic Charging Car Section */}
       <View style={styles.carVisualizerSection}>
-        <View style={[styles.visualizerBase, { perspective: 1000 }]}>
+        <View style={styles.visualizerBase}>
           <Animated.View style={{ 
             transform: [
-              { rotateX: '15deg' }, 
-              { rotateY: spin }
+              { scale: breatheAnim }
             ] 
           }}>
             <Image 
-              source={require('../assets/car_model.png')} 
-              style={{ width: 140, height: 140 }} 
+              source={require('../assets/charging_car.png')} 
+              style={{ width: 220, height: 160 }} 
               resizeMode="contain" 
             />
           </Animated.View>
