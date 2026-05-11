@@ -9,6 +9,16 @@ import { CarFront, Battery, Zap, Timer, Activity } from 'lucide-react-native';
 
 const VEHICLE_LIST = Object.values(VEHICLE_SPECS);
 
+const CSSCar = () => (
+  <View style={styles.cssCarBody}>
+    <View style={styles.cssCarRoof} />
+    <View style={styles.cssCarWindshield} />
+    <View style={styles.cssCarHeadlightLeft} />
+    <View style={styles.cssCarHeadlightRight} />
+    <View style={styles.cssCarSpoiler} />
+  </View>
+);
+
 export default function DashboardScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { spec, batteryPercent, estimatedRange, vehicleId, setVehicleId, setBatteryPercent, isConnected, setIsConnected } = useVehicle();
@@ -90,7 +100,7 @@ export default function DashboardScreen() {
               { rotateY: spin }
             ] 
           }}>
-            <CarFront color="#ffaa44" size={110} strokeWidth={1.5} />
+            <CSSCar />
           </Animated.View>
           <View style={styles.scanningRing} />
         </View>
@@ -241,6 +251,15 @@ const styles = StyleSheet.create({
 
   carVisualizerSection: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 30, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 20 },
   visualizerBase: { width: 180, height: 180, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+
+  // Pure CSS Car Styles
+  cssCarBody: { width: 100, height: 160, backgroundColor: '#ffaa44', borderRadius: 25, shadowColor: '#ffaa44', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 15, elevation: 10 },
+  cssCarRoof: { width: 70, height: 80, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 15, position: 'absolute', top: 30, left: 15 },
+  cssCarWindshield: { width: 70, height: 20, backgroundColor: 'rgba(255,255,255,0.2)', position: 'absolute', top: 25, left: 15, borderTopLeftRadius: 15, borderTopRightRadius: 15 },
+  cssCarHeadlightLeft: { width: 15, height: 10, backgroundColor: 'white', position: 'absolute', bottom: 5, left: 15, borderRadius: 5, shadowColor: 'white', shadowRadius: 10, shadowOpacity: 1 },
+  cssCarHeadlightRight: { width: 15, height: 10, backgroundColor: 'white', position: 'absolute', bottom: 5, right: 15, borderRadius: 5, shadowColor: 'white', shadowRadius: 10, shadowOpacity: 1 },
+  cssCarSpoiler: { width: 90, height: 15, backgroundColor: '#cc7a00', position: 'absolute', top: 5, left: 5, borderRadius: 3 },
+  
   scanningRing: { position: 'absolute', width: 220, height: 120, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(255, 107, 26, 0.2)', transform: [{ scaleX: 1 }, { rotateX: '75deg' }] },
   
   vehicleInfoHub: { alignItems: 'center', width: '100%' },
