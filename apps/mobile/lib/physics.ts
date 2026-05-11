@@ -313,6 +313,7 @@ export function planRoute(
   destLat: number, destLng: number,
   spec: VehicleSpec,
   startSoc: number,
+  availableHubs: any[] = CHARGING_HUBS,
   minArrivalSoc = 15,
   speedKmh = 65,
   tempCelsius = 28
@@ -343,7 +344,10 @@ export function planRoute(
   const nodes: Map<string, AStarNode> = new Map();
   nodes.set("origin", { id: "origin", lat: originLat, lng: originLng });
   nodes.set("dest", { id: "dest", lat: destLat, lng: destLng });
-  CHARGING_HUBS.forEach(h => nodes.set(h.city, { id: h.city, lat: h.lat, lng: h.lng, hub: h }));
+  availableHubs.forEach((h, idx) => {
+    const uid = `hub_${idx}_${h.lat}_${h.lng}`;
+    nodes.set(uid, { id: uid, lat: h.lat, lng: h.lng, hub: h });
+  });
 
   const gScore = new Map<string, number>();
   const fScore = new Map<string, number>();

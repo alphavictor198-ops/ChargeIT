@@ -178,8 +178,8 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Map & Route Planner Buttons */}
-            <div className="w-full mt-6 grid grid-cols-2 gap-3">
+            {/* Map, Route Planner & Active Trip Buttons */}
+            <div className="w-full mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link href="/stations" className="w-full">
                 <button className="btn-secondary w-full text-xs py-3 flex flex-col items-center justify-center gap-1.5" style={{ minHeight: "80px" }}>
                   <span className="text-xl">🗺️</span>
@@ -190,6 +190,13 @@ export default function DashboardPage() {
                 <button className="btn-secondary w-full text-xs py-3 flex flex-col items-center justify-center gap-1.5" style={{ minHeight: "80px" }}>
                   <span className="text-xl">🧭</span>
                   Route Planner
+                </button>
+              </Link>
+              <Link href="/active-trip" className="w-full">
+                <button className="w-full text-xs py-3 flex flex-col items-center justify-center gap-1.5 rounded-xl font-semibold transition-all" 
+                        style={{ minHeight: "80px", background: "rgba(0,255,157,0.1)", color: "#00ff9d", border: "1px solid rgba(0,255,157,0.3)" }}>
+                  <span className="text-xl">🚀</span>
+                  Live Trip
                 </button>
               </Link>
             </div>
