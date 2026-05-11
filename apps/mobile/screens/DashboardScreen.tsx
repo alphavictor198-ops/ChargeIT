@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getTrips, TripRecord, getPatternInsight } from '../lib/tripStore';
 import { useVehicle } from '../lib/VehicleContext';
 import { VEHICLE_SPECS } from '../lib/physics';
-import { Car, Battery, Zap, Timer, Activity } from 'lucide-react-native';
+import { CarFront, Battery, Zap, Timer, Activity } from 'lucide-react-native';
 
 const VEHICLE_LIST = Object.values(VEHICLE_SPECS);
 
@@ -75,18 +75,22 @@ export default function DashboardScreen() {
             </Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.connectedBadge}>
-            <View style={styles.connectedDot} />
-            <Text style={styles.connectedText}>V-Link Active</Text>
-          </View>
+          <TouchableOpacity style={styles.connectedBtn} disabled={true}>
+            <Text style={styles.connectedBtnText}>CONNECTED</Text>
+          </TouchableOpacity>
         )}
       </View>
 
       {/* 3D Rotating Car Section */}
       <View style={styles.carVisualizerSection}>
-        <View style={styles.visualizerBase}>
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <Car color="#ffaa44" size={100} strokeWidth={1.5} />
+        <View style={[styles.visualizerBase, { perspective: 1000 }]}>
+          <Animated.View style={{ 
+            transform: [
+              { rotateX: '15deg' }, 
+              { rotateY: spin }
+            ] 
+          }}>
+            <CarFront color="#ffaa44" size={110} strokeWidth={1.5} />
           </Animated.View>
           <View style={styles.scanningRing} />
         </View>
@@ -232,9 +236,8 @@ const styles = StyleSheet.create({
 
   connectBtn: { backgroundColor: '#ff6b1a', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, shadowColor: '#ff6b1a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
   connectBtnText: { color: 'white', fontWeight: 'bold', fontSize: 11, letterSpacing: 1 },
-  connectedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(68,255,178,0.05)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(68,255,178,0.2)' },
-  connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#44ffb2', marginRight: 6 },
-  connectedText: { color: '#44ffb2', fontWeight: 'bold', fontSize: 11, letterSpacing: 1 },
+  connectedBtn: { backgroundColor: '#44ffb2', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, shadowColor: '#44ffb2', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 6, borderBottomWidth: 3, borderBottomColor: '#2bb37d' },
+  connectedBtnText: { color: '#060404', fontWeight: '900', fontSize: 11, letterSpacing: 1 },
 
   carVisualizerSection: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 30, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 20 },
   visualizerBase: { width: 180, height: 180, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
