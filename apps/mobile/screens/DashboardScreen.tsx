@@ -93,8 +93,8 @@ export default function DashboardScreen() {
             ] 
           }}>
             <Image 
-              source={require('../assets/charging_car.png')} 
-              style={{ width: 220, height: 160 }} 
+              source={require('../assets/charging_car_dark.png')} 
+              style={{ width: 260, height: 180 }} 
               resizeMode="contain" 
             />
           </Animated.View>

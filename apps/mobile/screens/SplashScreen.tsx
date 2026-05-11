@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -26,8 +26,11 @@ export default function SplashScreen() {
     <View style={styles.container}>
       <Animated.View style={[styles.logoContainer, { opacity: fadeAnim, transform: [{ scale: fadeAnim }] }]}>
         <View style={styles.icon3DWrapper}>
-          <View style={styles.glowAura} />
-          <Text style={styles.boltIcon}>⚡</Text>
+          <Image 
+            source={require('../assets/splash_logo_3d.png')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.logoText}>GatiCharge</Text>
         <View style={styles.accentBar} />
@@ -48,11 +51,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon3DWrapper: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   glowAura: {
     position: 'absolute',
