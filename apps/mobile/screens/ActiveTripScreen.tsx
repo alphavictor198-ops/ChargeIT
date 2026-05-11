@@ -509,11 +509,3 @@ const styles = StyleSheet.create({
   feelingBtn: { borderRadius: 15, padding: 18, alignItems: 'center', marginBottom: 12 },
   feelingBtnText: { color: '#060404', fontSize: 18, fontWeight: 'bold' },
 });
- },
-  btnResumeText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-
-  feelingOverlay: { backgroundColor: '#0a0806', borderRadius: 20, padding: 25, borderWidth: 2, borderColor: 'rgba(255,107,26,0.15)', marginBottom: 15 },
-  feelingTitle: { color: 'white', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-  feelingBtn: { borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 10 },
-  feelingBtnText: { color: '#060404', fontSize: 18, fontWeight: 'bold' },
-});
