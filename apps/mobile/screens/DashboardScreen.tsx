@@ -224,7 +224,7 @@ export default function DashboardScreen() {
     </ScrollView>
   );
 }
-
+const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#060404', padding: 20 },
   header: { marginTop: 40, marginBottom: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { fontSize: 28, fontWeight: '900', color: 'white', letterSpacing: 1 },
