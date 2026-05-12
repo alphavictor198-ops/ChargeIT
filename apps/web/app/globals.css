@@ -246,9 +246,9 @@ input:focus, select:focus, textarea:focus {
   100% { transform: translateY(100%); opacity: 0; }
 }
 
-@keyframes car-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes car-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 @keyframes neon-pulse {
@@ -273,7 +273,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .rotating-car {
-  animation: car-rotate 12s linear infinite;
+  animation: car-breathe 6s ease-in-out infinite;
   filter: drop-shadow(0 0 15px rgba(255, 107, 26, 0.4));
 }
 

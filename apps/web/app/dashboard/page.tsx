@@ -141,7 +141,11 @@ export default function DashboardPage() {
             <div className="rotating-car-container relative">
               <div className="neon-ring" />
               <div className="rotating-car">
-                <Car className="w-24 h-24 text-[#ffaa44]" strokeWidth={1.2} />
+                <img 
+                  src="/charging_car_dark.png" 
+                  alt="Vehicle Scan" 
+                  className="w-48 h-auto object-contain drop-shadow-[0_0_15px_rgba(255,107,26,0.3)]" 
+                />
               </div>
             </div>
 
