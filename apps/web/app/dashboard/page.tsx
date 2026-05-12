@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { intelligenceApi } from "@/lib/api";
 import { 
   Battery, Zap, AlertTriangle, TrendingUp, 
-  Link as LinkIcon, Shield, Activity, Truck, Car, MapPin 
+  Link as LinkIcon, Shield, Activity, Truck, Car, MapPin, CheckCircle 
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -41,6 +41,20 @@ function SocGauge({ soc }: { soc: number }) {
 }
 
 export default function DashboardPage() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnect = () => {
+    setIsConnecting(true);
+    setTimeout(() => {
+      setIsConnecting(false);
+      setIsConnected(true);
+      toast.success("Vehicle Securely Connected", {
+        icon: "🔒",
+        style: { background: "#060b18", color: "#fff", border: "1px solid #ff6b1a" }
+      });
+    }, 2000);
+  };
   const [vehicleId, setVehicleId] = useState("nexon_ev");
   const [soc,       setSoc]       = useState(80);
   const [speed,     setSpeed]     = useState(60);
@@ -93,11 +107,25 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-6 relative">
           <div className="absolute right-0 top-0">
-            <Link href="/vehicle-connect"
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-all"
-              style={{ background: "rgba(0,212,255,0.1)", color: "#00d4ff", border: "1px solid rgba(0,212,255,0.3)" }}>
-              <LinkIcon className="w-3.5 h-3.5" />Connect Vehicle
-            </Link>
+            <button 
+              onClick={handleConnect}
+              disabled={isConnected || isConnecting}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-all ${isConnected ? 'cursor-default' : 'hover:brightness-110'}`}
+              style={{ 
+                background: isConnected ? "rgba(0,255,157,0.1)" : "rgba(0,212,255,0.1)", 
+                color: isConnected ? "#00ff9d" : "#00d4ff", 
+                border: `1px solid ${isConnected ? "rgba(0,255,157,0.3)" : "rgba(0,212,255,0.3)"}` 
+              }}
+            >
+              {isConnecting ? (
+                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : isConnected ? (
+                <CheckCircle className="w-3.5 h-3.5 animate-pulse" />
+              ) : (
+                <LinkIcon className="w-3.5 h-3.5" />
+              )}
+              {isConnecting ? "Connecting..." : isConnected ? "Vehicle Connected" : "Connect Vehicle"}
+            </button>
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-white">EV Intelligence Center</h1>
           <p className="text-slate-400 text-sm mt-0.5">
