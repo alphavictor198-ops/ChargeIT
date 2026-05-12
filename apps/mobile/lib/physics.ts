@@ -229,6 +229,9 @@ export const CHARGING_HUBS: { city: string; operator: string; lat: number; lng: 
   { city: "Kotputli",     operator: "Tata Power",   lat: 27.7042, lng: 76.1952, power_kw: 50,  wait_min: 5  },
   { city: "Jaipur",       operator: "Statiq",       lat: 26.9124, lng: 75.7873, power_kw: 60,  wait_min: 10 },
   { city: "Mathura",      operator: "Tata Power",   lat: 27.4924, lng: 77.6737, power_kw: 50,  wait_min: 5  },
+  { city: "Agra",         operator: "Statiq",       lat: 27.1767, lng: 78.0081, power_kw: 60,  wait_min: 10 },
+  { city: "Gwalior",      operator: "ChargeZone",   lat: 26.2183, lng: 78.1828, power_kw: 50,  wait_min: 8  },
+  { city: "Jhansi",       operator: "BPCL",         lat: 25.4484, lng: 78.5685, power_kw: 50,  wait_min: 5  },
   { city: "Ajmer",        operator: "BPCL",         lat: 26.4499, lng: 74.6399, power_kw: 50,  wait_min: 8  },
   { city: "Jodhpur",      operator: "Tata Power",   lat: 26.2389, lng: 73.0243, power_kw: 50,  wait_min: 10 },
   { city: "Udaipur",      operator: "ChargeZone",   lat: 24.5854, lng: 73.7125, power_kw: 50,  wait_min: 8  },
@@ -519,4 +522,3 @@ export async function planRoute(
     speedKmh: avgSpeed,
   };
 }
-

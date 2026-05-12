@@ -69,7 +69,7 @@ export default function BookingPage() {
           </div>
 
           <button 
-            onClick={() => router.push('/active-trip')}
+            onClick={() => router.push('/passenger-profile')}
             className="w-full py-4 bg-[#ff6b1a] text-white rounded-xl font-black text-sm tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
           >
             START NAVIGATION <ArrowRight className="w-4 h-4" />

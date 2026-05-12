@@ -14,6 +14,7 @@ export default function ActiveTripHUD() {
   const [hss, setHss] = useState(98);
   const [elapsed, setElapsed] = useState(0);
   const [isAlert, setIsAlert] = useState(false);
+  const [jerk, setJerk] = useState(0.12);
 
   // Simulation Loop
   useEffect(() => {
@@ -23,14 +24,17 @@ export default function ActiveTripHUD() {
       // Simulate slow battery drain
       if (Math.random() > 0.8) setSoc(s => Math.max(2, s - 1));
       
-      // Simulate HSS fluctuation
-      if (Math.random() > 0.9) {
-        const drop = Math.floor(Math.random() * 5);
+      // Simulate HSS fluctuation & Jerk
+      if (Math.random() > 0.8) {
+        const drop = Math.floor(Math.random() * 6);
+        const newJerk = +(Math.random() * 0.9).toFixed(2);
+        setJerk(newJerk);
+
         setHss(h => {
-          const next = Math.max(45, h - drop);
+          let next = Math.max(45, h - (newJerk > 0.7 ? 15 : drop));
           if (next < 80 && !isAlert) {
              setIsAlert(true);
-             toast("Safety Alert: Fatigue detected", { icon: "⚠️", style: { background: "#ff4455", color: "#fff" } });
+             toast("Safety Alert: Critical Fatigue / Sudden Jerk", { icon: "⚠️", style: { background: "#ff4455", color: "#fff" } });
           }
           return next;
         });
@@ -39,7 +43,7 @@ export default function ActiveTripHUD() {
     return () => clearInterval(timer);
   }, [isAlert]);
 
-  const hssColor = hss > 85 ? "#00ff9d" : hss > 70 ? "#ffaa44" : "#ff4455";
+  const hssColor = hss >= 80 ? "#44ffb2" : hss > 60 ? "#ffaa44" : "#ff4455";
 
   return (
     <div className="min-h-screen bg-[#060404] text-white p-6 pt-24 overflow-hidden relative">
@@ -123,7 +127,7 @@ export default function ActiveTripHUD() {
                      </div>
                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                         <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Jerk Detected</div>
-                        <div className="text-2xl font-black text-white">0.42 <span className="text-xs text-slate-500 font-normal">g</span></div>
+                        <div className="text-2xl font-black text-white">{jerk} <span className="text-xs text-slate-500 font-normal">g</span></div>
                      </div>
                   </div>
                </div>
