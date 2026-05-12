@@ -242,9 +242,6 @@ export default function DashboardPage() {
           <div className="grid md:grid-cols-3 gap-6">
             <Link href="/admin">
               <div className="glass-card p-6 bg-white/[0.03] border-white/5 rounded-2xl border hover:bg-white/[0.05] transition-all group cursor-pointer h-full">
-                <div className="p-3 bg-[#00ff9d]/10 rounded-xl w-fit mb-4 text-[#00ff9d]">
-                  <Activity className="w-6 h-6" />
-                </div>
                 <h3 className="text-lg font-bold text-white group-hover:text-[#00ff9d] transition-colors">CPO Admin Panel</h3>
                 <p className="text-sm text-slate-400 mt-2">Manage charging infrastructure, pricing models, and hardware health via OCPP.</p>
               </div>
@@ -252,9 +249,6 @@ export default function DashboardPage() {
 
             <Link href="/fleet">
               <div className="glass-card p-6 bg-white/[0.03] border-white/5 rounded-2xl border hover:bg-white/[0.05] transition-all group cursor-pointer h-full">
-                <div className="p-3 bg-[#ff6b1a]/10 rounded-xl w-fit mb-4 text-[#ff6b1a]">
-                  <Truck className="w-6 h-6" />
-                </div>
                 <h3 className="text-lg font-bold text-white group-hover:text-[#ff6b1a] transition-colors">Fleet Management</h3>
                 <p className="text-sm text-slate-400 mt-2">Monitor multi-vehicle telemetry, driver HSS safety scores, and logistical efficiency.</p>
               </div>
@@ -262,9 +256,6 @@ export default function DashboardPage() {
 
             <div className="glass-card p-6 bg-white/[0.03] border-white/5 rounded-2xl border opacity-80 h-full relative overflow-hidden">
                <div className="absolute top-0 right-0 bg-[#8b5cf6]/20 text-[#8b5cf6] px-3 py-1 text-[10px] font-black uppercase rounded-bl-lg">Simulated</div>
-                <div className="p-3 bg-[#8b5cf6]/10 rounded-xl w-fit mb-4 text-[#8b5cf6]">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
                 <h3 className="text-lg font-bold text-white">AI Demand Forecast</h3>
                 <p className="text-sm text-slate-400 mt-2">Predictive heatmaps and grid-load balancing suggestions for future-ready infrastructure.</p>
             </div>
