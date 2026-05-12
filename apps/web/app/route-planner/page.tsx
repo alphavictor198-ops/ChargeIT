@@ -105,8 +105,8 @@ export default function RoutePlannerPage() {
       setOrigin(currentOrigin);
       
       setIsCalc(true);
-      setTimeout(() => {
-        const plan = planRoute(currentOrigin.lat, currentOrigin.lng, customDest.lat, customDest.lng, spec, soc, minSoc, 65, 28);
+      setTimeout(async () => {
+        const plan = await planRoute(currentOrigin.lat, currentOrigin.lng, customDest.lat, customDest.lng, spec, soc, undefined, minSoc, 65, 28);
         setResult(plan);
         setIsCalc(false);
         toast.success(`Route planned to ${customDest.city}`);
@@ -118,8 +118,8 @@ export default function RoutePlannerPage() {
     if (origin.city === dest.city) { toast.error("Pick different cities"); return; }
     setIsCalc(true);
     stopNav();
-    setTimeout(() => {
-      const plan = planRoute(origin.lat, origin.lng, dest.lat, dest.lng, spec, soc, minSoc, 65, 28);
+    setTimeout(async () => {
+      const plan = await planRoute(origin.lat, origin.lng, dest.lat, dest.lng, spec, soc, undefined, minSoc, 65, 28);
       setResult(plan);
       setIsCalc(false);
       toast.success(`Route: ${plan.roadDistanceKm} km, ${plan.stops.length} stop${plan.stops.length !== 1 ? "s" : ""}`);
