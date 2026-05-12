@@ -189,7 +189,6 @@ export default function DashboardScreen() {
           <Text style={styles.actionBtnDesc}>Find nearby chargers</Text>
         </TouchableOpacity>
       </View>
-      </View>
 
       {/* Enterprise Suite */}
       <Text style={styles.sectionTitle}>Enterprise Suite</Text>

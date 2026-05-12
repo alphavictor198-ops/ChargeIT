@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Platform } from 'react-native';
+let MapView: any, Marker: any;
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+}
 import * as Location from 'expo-location';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -199,11 +204,23 @@ export default function MapScreen() {
           <ActivityIndicator size="large" color="#00ff9d" />
           <Text style={styles.loadingText}>Locating nearby hubs...</Text>
         </View>
+      ) : Platform.OS === 'web' ? (
+        <View style={[styles.map, { backgroundColor: '#1a1a1a', justifyContent: 'center', alignItems: 'center' }]}>
+           <Text style={{ color: '#00ff9d', fontSize: 18, fontWeight: 'bold' }}>Map Interface [SIMULATED]</Text>
+           <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 8 }}>Native MapView is available on Mobile/Emulator</Text>
+           <View style={{ marginTop: 20, width: '80%' }}>
+              {filteredStations.slice(0, 5).map(s => (
+                <View key={s.id} style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#333' }}>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>📍 {s.name}</Text>
+                  <Text style={{ color: '#94a3b8', fontSize: 10 }}>{s.maxPowerKw}kW · {s.availableSlots} slots</Text>
+                </View>
+              ))}
+           </View>
+        </View>
       ) : (
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
           customMapStyle={darkMapStyle}
           initialRegion={{
             latitude: location ? location.coords.latitude : 22.7196,
