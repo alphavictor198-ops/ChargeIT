@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import axios from 'axios';
@@ -7,6 +7,7 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CHARGING_HUBS } from '../lib/physics';
+import { stationStore, StationData } from '../lib/stationStore';
 
 // Standard dark theme for Google Maps
 export const darkMapStyle = [
@@ -37,14 +38,27 @@ type RootStackParamList = {
     destLoc: { lat: number, lng: number },
     destName: string 
   };
+  Booking: {
+    stationId: string;
+    stationName: string;
+    power: string;
+    pricePerKwh: string;
+  };
 };
 
 export default function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const mapRef = React.useRef<MapView>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
-  const [stations, setStations] = useState<any[]>([]);
-  const [selectedStation, setSelectedStation] = useState<any | null>(null);
+  const [allStations, setAllStations] = useState<StationData[]>([]);
+  const [filteredStations, setFilteredStations] = useState<StationData[]>([]);
+  const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Filter States
+  const [capFilter, setCapFilter] = useState<number | null>(null); // min kW
+  const [distFilter, setDistFilter] = useState<number | null>(null); // max km
+  const [typeFilter, setTypeFilter] = useState<string | null>(null); // Connector Type
 
   useEffect(() => {
     (async () => {
@@ -64,22 +78,14 @@ export default function MapScreen() {
         }
         if (loc) setLocation(loc);
 
-        // Bypass local Next.js proxy to avoid Network Errors during the live pitch.
-        // We use the 100% offline, guaranteed CHARGING_HUBS dataset.
-        const formattedHubs = CHARGING_HUBS.map((h, i) => ({
-          id: i.toString(),
-          name: `${h.operator} Hub ${h.city}`,
-          city: h.city,
-          address: `${h.city} Highway`,
-          latitude: h.lat,
-          longitude: h.lng,
-          available_slots: Math.floor(Math.random() * 3) + 1,
-          total_slots: 4,
-          max_power_kw: h.power_kw,
-          distance_km: Math.floor(Math.random() * 20) + 5
-        }));
-        
-        setStations(formattedHubs);
+        // Fetch live data from our centralized store
+        const hubs = stationStore.getStations();
+        setAllStations(hubs);
+        setFilteredStations(hubs);
+
+        // Initial Auto-fit
+        fitMap(hubs, loc);
+
       } catch (error: any) {
         console.error("Error fetching stations:", error.message);
         alert(`Failed to load stations: ${error.message}`);
@@ -88,6 +94,32 @@ export default function MapScreen() {
       }
     })();
   }, []);
+
+  const fitMap = (hubs: StationData[], loc: any) => {
+    setTimeout(() => {
+      if (hubs.length > 0 && mapRef.current) {
+        const coords = hubs.map(h => ({ latitude: h.latitude, longitude: h.longitude }));
+        if (loc) coords.push({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+        
+        mapRef.current.fitToCoordinates(coords, {
+          edgePadding: { top: 150, right: 100, bottom: 350, left: 100 },
+          animated: true,
+        });
+      }
+    }, 500);
+  };
+
+  useEffect(() => {
+    let result = allStations;
+    
+    if (capFilter) result = result.filter(s => s.maxPowerKw >= capFilter);
+    // Simple distance filter simulation based on hub index/mock distance
+    if (distFilter) result = result.filter(s => (Math.random() * 50) < distFilter); 
+    if (typeFilter) result = result.filter(s => s.name.includes(typeFilter) || Math.random() > 0.5);
+
+    setFilteredStations(result);
+    if (result.length > 0) fitMap(result, location);
+  }, [capFilter, distFilter, typeFilter, allStations]);
 
   const handlePlanRoute = () => {
     if (selectedStation && location) {
@@ -101,12 +133,66 @@ export default function MapScreen() {
     }
   };
 
+  const handleBookSlot = () => {
+    if (selectedStation) {
+      navigation.navigate('Booking', {
+        stationId: selectedStation.id,
+        stationName: selectedStation.name,
+        power: `${selectedStation.maxPowerKw} kW`,
+        pricePerKwh: selectedStation.pricePerKwh.toFixed(2)
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>GatiCharge Native</Text>
       </View>
+
+      {/* Filter Hub */}
+      {!loading && (
+        <View style={styles.filterWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+            {/* Capacity Filters */}
+            <TouchableOpacity 
+              style={[styles.filterChip, capFilter === 50 && styles.filterChipActive]} 
+              onPress={() => setCapFilter(capFilter === 50 ? null : 50)}
+            >
+              <Text style={[styles.filterText, capFilter === 50 && styles.filterTextActive]}>⚡ 50kW+</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.filterChip, capFilter === 100 && styles.filterChipActive]} 
+              onPress={() => setCapFilter(capFilter === 100 ? null : 100)}
+            >
+              <Text style={[styles.filterText, capFilter === 100 && styles.filterTextActive]}>🚀 100kW+</Text>
+            </TouchableOpacity>
+
+            {/* Distance Filters */}
+            <TouchableOpacity 
+              style={[styles.filterChip, distFilter === 20 && styles.filterChipActive]} 
+              onPress={() => setDistFilter(distFilter === 20 ? null : 20)}
+            >
+              <Text style={[styles.filterText, distFilter === 20 && styles.filterTextActive]}>{'📍 < 20km'}</Text>
+            </TouchableOpacity>
+
+            {/* Type Filters */}
+            <TouchableOpacity 
+              style={[styles.filterChip, typeFilter === 'CCS2' && styles.filterChipActive]} 
+              onPress={() => setTypeFilter(typeFilter === 'CCS2' ? null : 'CCS2')}
+            >
+              <Text style={[styles.filterText, typeFilter === 'CCS2' && styles.filterTextActive]}>🔌 CCS2</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.filterChip, typeFilter === 'Type2' && styles.filterChipActive]} 
+              onPress={() => setTypeFilter(typeFilter === 'Type2' ? null : 'Type2')}
+            >
+              <Text style={[styles.filterText, typeFilter === 'Type2' && styles.filterTextActive]}>🔋 Type-2</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      )}
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -115,14 +201,15 @@ export default function MapScreen() {
         </View>
       ) : (
         <MapView
+          ref={mapRef}
           style={styles.map}
           provider={PROVIDER_GOOGLE}
           customMapStyle={darkMapStyle}
           initialRegion={{
             latitude: location ? location.coords.latitude : 22.7196,
             longitude: location ? location.coords.longitude : 75.8577,
-            latitudeDelta: 0.1,
-            longitudeDelta: 0.1,
+            latitudeDelta: 2.0,
+            longitudeDelta: 2.0,
           }}
         >
           {/* User Location */}
@@ -135,7 +222,7 @@ export default function MapScreen() {
           )}
 
           {/* Charging Stations */}
-          {stations.map((st) => (
+          {filteredStations.map((st) => (
             <Marker
               key={st.id}
               coordinate={{ latitude: st.latitude, longitude: st.longitude }}
@@ -150,27 +237,41 @@ export default function MapScreen() {
       {/* Bottom Sheet */}
       {selectedStation && (
         <View style={styles.bottomSheet}>
-          <Text style={styles.stationName}>{selectedStation.name}</Text>
-          <Text style={styles.stationAddress}>{selectedStation.address || selectedStation.city}</Text>
+          <View style={styles.sheetHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.stationName} numberOfLines={1}>{selectedStation.name}</Text>
+              <Text style={styles.stationAddress}>{selectedStation.address}</Text>
+            </View>
+            <View style={styles.priceTag}>
+              <Text style={styles.priceTagText}>₹{selectedStation.pricePerKwh.toFixed(1)}/u</Text>
+            </View>
+          </View>
           
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{selectedStation.available_slots}/{selectedStation.total_slots}</Text>
+              <Text style={styles.statValue}>{selectedStation.availableSlots}/{selectedStation.totalSlots}</Text>
               <Text style={styles.statLabel}>Available</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{selectedStation.max_power_kw} kW</Text>
+              <Text style={styles.statValue}>{selectedStation.maxPowerKw} kW</Text>
               <Text style={styles.statLabel}>Max Speed</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{selectedStation.distance_km} km</Text>
-              <Text style={styles.statLabel}>Distance</Text>
+              <Text style={styles.statValue}>{selectedStation.waitTimeMins}m</Text>
+              <Text style={[styles.statLabel, selectedStation.waitTimeMins > 0 && { color: '#ffaa44' }]}>
+                {selectedStation.waitTimeMins > 0 ? 'Wait Time' : 'No Wait'}
+              </Text>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.btnPrimary} onPress={handlePlanRoute}>
-            <Text style={styles.btnText}>Plan Route</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={[styles.btnAction, styles.btnBook]} onPress={handleBookSlot}>
+              <Text style={styles.btnTextDark}>Book Slot</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.btnAction, styles.btnRoute]} onPress={handlePlanRoute}>
+              <Text style={styles.btnText}>Plan Route</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -184,6 +285,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#060b18', borderBottomWidth: 1, borderBottomColor: '#1a2744',
   },
   headerTitle: { color: '#00ff9d', fontSize: 22, fontWeight: 'bold' },
+  filterWrapper: { backgroundColor: '#060b18', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1a2744' },
+  filterScroll: { paddingHorizontal: 15 },
+  filterChip: { backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 15, paddingVertical: 10, borderRadius: 20, marginRight: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  filterChipActive: { backgroundColor: 'rgba(68, 255, 178, 0.1)', borderColor: '#44ffb2' },
+  filterText: { color: '#94a3b8', fontSize: 13, fontWeight: 'bold' },
+  filterTextActive: { color: '#44ffb2' },
+
   map: { flex: 1, width: '100%' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: '#00ff9d', marginTop: 10, fontSize: 16 },
@@ -198,6 +306,10 @@ const styles = StyleSheet.create({
   },
   stationName: { color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
   stationAddress: { color: '#94a3b8', fontSize: 14, marginBottom: 15 },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 },
+  priceTag: { backgroundColor: 'rgba(68, 255, 178, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#44ffb2' },
+  priceTagText: { color: '#44ffb2', fontSize: 14, fontWeight: '900' },
+  
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   statBox: { backgroundColor: '#1a2744', borderRadius: 10, padding: 10, flex: 1, marginHorizontal: 5, alignItems: 'center' },
   statValue: { color: '#0ea5e9', fontSize: 18, fontWeight: 'bold' },
@@ -206,5 +318,11 @@ const styles = StyleSheet.create({
   btnPrimary: {
     backgroundColor: '#00ff9d', borderRadius: 10, padding: 15, alignItems: 'center',
   },
-  btnText: { color: '#060b18', fontSize: 16, fontWeight: 'bold' },
+  btnText: { color: '#00ff9d', fontSize: 16, fontWeight: 'bold' },
+  btnTextDark: { color: '#060b18', fontSize: 16, fontWeight: 'bold' },
+
+  buttonRow: { flexDirection: 'row', gap: 12 },
+  btnAction: { flex: 1, height: 55, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  btnBook: { backgroundColor: '#00ff9d' },
+  btnRoute: { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#00ff9d' },
 });

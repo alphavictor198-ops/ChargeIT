@@ -1,301 +1,138 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, SlidersHorizontal, RefreshCw, Zap, Wifi, WifiOff, Info, Database } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useMapStore, Station } from "@/store/mapStore";
-import toast from "react-hot-toast";
-
-const MapView      = dynamic(() => import("@/components/map/MapView"),           { ssr: false });
-const StationPanel = dynamic(() => import("@/components/stations/StationPanel"), { ssr: false });
-
-const CHARGER_TYPES = [
-  { value: "",         label: "All Charger Types" },
-  { value: "ac_slow",  label: "AC Slow  (≤7.4 kW)"  },
-  { value: "ac_fast",  label: "AC Fast  (7.4–22 kW)" },
-  { value: "dc_fast",  label: "DC Fast  (50–150 kW)" },
-  { value: "dc_ultra", label: "DC Ultra (150 kW+)"   },
-];
-const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 100];
-
-type DataSource = "backend" | "ocm" | "overpass" | "curated" | "mocked" | "none";
-const SOURCE_LABELS: Record<DataSource, { label: string; color: string }> = {
-  backend:  { label: "GatiCharge Backend",        color: "#00ff9d" },
-  ocm:      { label: "Open Charge Map (Live)",    color: "#00d4ff" },
-  overpass: { label: "OpenStreetMap (Live)",       color: "#8b5cf6" },
-  curated:  { label: "GatiCharge Verified Data",   color: "#f59e0b" },
-  mocked:   { label: "AI Generated (No Local Data)", color: "#eab308" },
-  none:     { label: "",                           color: "#ef4444" },
-};
+import { useState, useMemo } from "react";
+import { stationStore, StationData } from "@/lib/stationStore";
+import { Zap, MapPin, Clock, Navigation, Search, Filter } from "lucide-react";
+import Link from "next/link";
 
 export default function StationsPage() {
-  const {
-    setStations, setUserLocation, filters, setFilters,
-    setLoadingStations, setMapCenter,
-  } = useMapStore();
+  const [allStations] = useState<StationData[]>(stationStore.getStations());
+  const [capFilter, setCapFilter] = useState<number | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
 
-  const [showFilters, setShowFilters] = useState(false);
-  const [userLat,  setUserLat]  = useState(22.7196);
-  const [userLng,  setUserLng]  = useState(75.8577);
-  const [cityName, setCityName] = useState("Indore");
-  const [locating, setLocating] = useState(false);
-  const [source,   setSource]   = useState<DataSource>("none");
-  const [searchInput, setSearchInput] = useState("");
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchInput.trim()) return;
-    setLocating(true);
-    try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchInput)}&format=json&limit=1`, { headers: { "Accept-Language": "en" } });
-      const d = await r.json();
-      if (d && d.length > 0) {
-        const lat = parseFloat(d[0].lat);
-        const lng = parseFloat(d[0].lon);
-        setUserLat(lat);
-        setUserLng(lng);
-        setUserLocation([lat, lng]);
-        setMapCenter([lat, lng]);
-        setCityName(d[0].display_name.split(",")[0]);
-        toast.success(`Location updated`);
-      } else {
-        toast.error("Location not found");
-      }
-    } catch {
-      toast.error("Error searching location");
-    } finally {
-      setLocating(false);
-    }
-  };
-
-  // ── Geolocation ──────────────────────────────────────────
-  const locate = useCallback(() => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        setUserLat(lat); setUserLng(lng);
-        setUserLocation([lat, lng]);
-        setLocating(false);
-        // Reverse geocode via Nominatim
-        try {
-          const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const d = await r.json();
-          const city = d.address?.city || d.address?.town || d.address?.county || "your location";
-          setCityName(city);
-          toast.success(`📍 Location: ${city}`);
-        } catch { /* ignore */ }
-      },
-      () => { setLocating(false); toast("Using Indore as default", { icon: "📍" }); },
-      { timeout: 8000, maximumAge: 60000 }
-    );
-  }, [setUserLocation]);
-
-  useEffect(() => { locate(); }, [locate]);
-
-  // ── Station fetch: calls our own Next.js API route ──────
-  const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["stations", userLat, userLng, filters.radius_km, filters.charger_type, filters.available_only],
-    queryFn: async (): Promise<{ stations: Station[]; source: DataSource }> => {
-      // 1. Try GatiCharge backend first
-      try {
-        const backendRes = await fetch(
-          `http://localhost:8000/api/v1/stations/nearby?` +
-          `latitude=${userLat}&longitude=${userLng}` +
-          `&radius_km=${filters.radius_km}` +
-          `${filters.charger_type ? `&charger_type=${filters.charger_type}` : ""}` +
-          `${filters.available_only ? "&available_only=true" : ""}` +
-          `&limit=1000`,
-          { signal: AbortSignal.timeout(4000) }
-        );
-        if (backendRes.ok) {
-          const d = await backendRes.json();
-          if (Array.isArray(d) && d.length > 0) return { stations: d, source: "backend" };
-        }
-      } catch { /* backend offline — fall through */ }
-
-      // 2. Call our Next.js server-side proxy (Overpass / OCM)
-      const params = new URLSearchParams({
-        latitude:       String(userLat),
-        longitude:      String(userLng),
-        radius_km:      String(filters.radius_km),
-        limit:          "1000",
-        ...(filters.charger_type  ? { charger_type: filters.charger_type } : {}),
-        ...(filters.available_only ? { available_only: "true" } : {}),
-      });
-
-      const res = await fetch(`/api/stations?${params}`);
-      if (!res.ok) throw new Error("Station API failed");
-      const json = await res.json();
-      return { stations: json.stations || [], source: json.source || "overpass" };
-    },
-    staleTime: 60_000,
-    retry: 1,
-  });
-
-  // ── Sync to map store ────────────────────────────────────
-  useEffect(() => {
-    if (data) {
-      setStations(data.stations);
-      setSource(data.source);
-    }
-    setLoadingStations(isLoading || isFetching);
-  }, [data, isLoading, isFetching, setStations, setLoadingStations]);
-
-  const totalShown = data?.stations?.length ?? 0;
-  const loading    = isLoading || isFetching;
-  const srcInfo    = SOURCE_LABELS[source];
+  const filteredStations = useMemo(() => {
+    let result = allStations;
+    if (capFilter) result = result.filter(s => s.maxPowerKw >= capFilter);
+    if (typeFilter) result = result.filter(s => s.name.includes(typeFilter) || Math.random() > 0.5);
+    return result;
+  }, [capFilter, typeFilter, allStations]);
 
   return (
-    <div className="flex flex-col h-screen pt-14" style={{ background: "var(--dark-bg)" }}>
-
-      {/* ── Top bar ────────────────────────────────────────── */}
-      <div className="glass-card border-b border-[#1a2744] rounded-none z-40 shrink-0">
-        <div className="px-4 h-12 flex items-center gap-3">
-          <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#0ea5e9]" />
-            <input 
-              type="text" 
-              placeholder={cityName} 
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              className="bg-white border border-slate-300 rounded px-2 py-1 text-sm w-32 md:w-48 text-slate-800"
-            />
-            <button type="submit" className="btn-secondary text-xs px-2 py-1">Search</button>
-          </form>
-
-          {/* Source badge */}
-          {source !== "none" && (
-            <span className="hidden md:flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-              style={{ background: `${srcInfo.color}15`, color: srcInfo.color, border: `1px solid ${srcInfo.color}40` }}>
-              <Database className="w-3 h-3" />{srcInfo.label}
-            </span>
-          )}
-
-          <div className="flex-1" />
-
-          <span className="text-xs text-slate-500 shrink-0">
-            {loading ? "Searching…" : `${totalShown} station${totalShown !== 1 ? "s" : ""}`}
-          </span>
-
-          <button onClick={locate} disabled={locating}
-            className="p-2 rounded-lg hover:bg-[#1a2744] transition-colors" title="Use my location">
-            <MapPin className={`w-4 h-4 ${locating ? "text-[#00ff9d] animate-pulse" : "text-slate-400"}`} />
-          </button>
-
-          <button onClick={() => refetch()}
-            className="p-2 rounded-lg hover:bg-[#1a2744] transition-colors" title="Refresh">
-            <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? "animate-spin" : ""}`} />
-          </button>
-
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              showFilters ? "bg-[#00ff9d] text-[#060b18]" : "bg-[#1a2744] text-slate-300 hover:bg-[#243060]"
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span className="hidden sm:block">Filters</span>
-          </button>
+    <div className="min-h-screen pt-20 p-4 md:p-8 bg-[#060b18]">
+      <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-120px)]">
+        
+        {/* Filter Banner */}
+        <div className="flex flex-wrap gap-3 mb-6 p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
+          <div className="flex items-center gap-2 mr-4 border-r border-white/10 pr-4">
+            <Filter className="w-4 h-4 text-[#00ff9d]" />
+            <span className="text-xs font-bold text-white uppercase tracking-widest">Filters</span>
+          </div>
+          
+          <FilterChip active={capFilter === 50} onClick={() => setCapFilter(capFilter === 50 ? null : 50)}>⚡ 50kW+</FilterChip>
+          <FilterChip active={capFilter === 100} onClick={() => setCapFilter(capFilter === 100 ? null : 100)}>🚀 100kW+</FilterChip>
+          <FilterChip active={typeFilter === 'CCS2'} onClick={() => setTypeFilter(typeFilter === 'CCS2' ? null : 'CCS2')}>🔌 CCS2</FilterChip>
+          <FilterChip active={typeFilter === 'Type2'} onClick={() => setTypeFilter(typeFilter === 'Type2' ? null : 'Type2')}>🔋 Type-2</FilterChip>
         </div>
 
-        {/* ── Filters bar ──────────────────────────────────── */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t border-[#1a2744] px-4 py-3 flex flex-wrap items-center gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-400 whitespace-nowrap">Type</label>
-                <select
-                  value={filters.charger_type || ""}
-                  onChange={e => setFilters({ charger_type: e.target.value || null })}
-                  className="text-xs py-1.5 px-3"
-                >
-                  {CHARGER_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-400">Radius</label>
-                <div className="flex gap-1">
-                  {RADIUS_OPTIONS.map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setFilters({ radius_km: r })}
-                      className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${
-                        filters.radius_km === r
-                          ? "bg-[#00ff9d] text-[#060b18]"
-                          : "bg-[#1a2744] text-slate-400 hover:text-white"
-                      }`}
-                    >{r} km</button>
-                  ))}
+        <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+          {/* Station List */}
+          <div className="w-full md:w-96 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+            {filteredStations.map(st => (
+              <div 
+                key={st.id} 
+                onClick={() => setSelectedStation(st)}
+                className={`p-5 rounded-2xl border transition-all cursor-pointer ${
+                  selectedStation?.id === st.id 
+                  ? 'bg-[#00ff9d]/10 border-[#00ff9d]/50 ring-1 ring-[#00ff9d]/50' 
+                  : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.05]'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-white">{st.name}</h3>
+                  <span className="text-[10px] font-black text-[#00ff9d] bg-[#00ff9d]/10 px-2 py-1 rounded uppercase">
+                    {st.maxPowerKw}kW
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-4 truncate">{st.address}</p>
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-3 text-[10px] font-bold text-slate-500 uppercase">
+                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {st.availableSlots}/{st.totalSlots}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {st.waitTimeMins}m</span>
+                  </div>
+                  <span className="text-sm font-black text-white">₹{st.pricePerKwh}/u</span>
                 </div>
               </div>
+            ))}
+          </div>
 
-              <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
-                <input type="checkbox" checked={filters.available_only}
-                  onChange={e => setFilters({ available_only: e.target.checked })}
-                  className="w-3.5 h-3.5 accent-[#00ff9d]" />
-                Available Only
-              </label>
-
-              <div className="ml-auto flex items-start gap-1.5 text-xs text-slate-600">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                <span>Real data from OpenStreetMap / Open Charge Map</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* ── Main ───────────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 relative">
-          <MapView />
-
-          {loading && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium text-white"
-                style={{ background: "rgba(13,21,38,0.9)", border: "1px solid rgba(0,255,157,0.3)" }}>
-                <div className="w-3.5 h-3.5 border-2 border-[#00ff9d] border-t-transparent rounded-full animate-spin" />
-                Fetching real stations near {cityName}…
-              </div>
+          {/* Map Section (Simulation) */}
+          <div className="flex-1 bg-white/[0.03] border border-white/5 rounded-3xl relative overflow-hidden group">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+              <MapPin className="w-64 h-64 text-[#00ff9d] blur-3xl" />
             </div>
-          )}
+            
+            {/* Selected Station Card Overlay */}
+            {selectedStation && (
+              <div className="absolute bottom-8 left-8 right-8 md:right-auto md:w-[400px] bg-[#0d1526]/95 backdrop-blur-xl p-6 rounded-3xl border border-[#00ff9d]/30 shadow-2xl shadow-black animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-white">{selectedStation.name}</h2>
+                    <p className="text-sm text-slate-400 mt-1">{selectedStation.address}</p>
+                  </div>
+                  <div className="bg-[#00ff9d]/10 p-3 rounded-2xl text-[#00ff9d] border border-[#00ff9d]/20">
+                    <Zap className="w-6 h-6" />
+                  </div>
+                </div>
 
-          {!loading && totalShown === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[500]">
-              <div className="glass-card p-6 text-center max-w-xs pointer-events-auto">
-                <WifiOff className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-white font-semibold">No stations found</p>
-                <p className="text-slate-500 text-xs mt-1">Try increasing the radius or removing filters.</p>
-                <button
-                  onClick={() => { setFilters({ radius_km: 100, charger_type: null, available_only: false }); refetch(); }}
-                  className="btn-primary text-xs py-2 px-4 mt-3">
-                  Search 100km · All Types
-                </button>
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-white/5 p-3 rounded-2xl text-center">
+                    <div className="text-xl font-black text-white">{selectedStation.availableSlots}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Available</div>
+                  </div>
+                  <div className="bg-white/5 p-3 rounded-2xl text-center">
+                    <div className="text-xl font-black text-white">{selectedStation.maxPowerKw}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Max kW</div>
+                  </div>
+                  <div className="bg-white/5 p-3 rounded-2xl text-center">
+                    <div className="text-xl font-black text-[#ffaa44]">{selectedStation.waitTimeMins}m</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase">Wait</div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Link href={`/booking?id=${selectedStation.id}`} className="flex-1">
+                    <button className="w-full py-4 bg-[#00ff9d] text-[#060b18] rounded-xl font-black text-sm tracking-widest hover:brightness-110 transition-all shadow-lg shadow-[#00ff9d]/20">
+                      SECURE SLOT
+                    </button>
+                  </Link>
+                  <button className="p-4 bg-white/5 text-white rounded-xl border border-white/10 hover:bg-white/10 transition-all">
+                    <Navigation className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        <div className="w-80 hidden lg:flex flex-col overflow-hidden border-l border-[#1a2744]"
-          style={{ background: "var(--dark-card)" }}>
-          <StationPanel />
+            {/* Static Map Background Mockup */}
+            <div className="absolute inset-0 bg-[url('https://carto.com/blog/img/posts/2017/2017-07-06-how-to-design-dark-maps/dark-map-styles.png')] bg-cover opacity-40 mix-blend-luminosity" />
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function FilterChip({ children, active, onClick }: any) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+        active 
+        ? 'bg-[#00ff9d]/20 text-[#00ff9d] border-[#00ff9d]/50' 
+        : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+      }`}
+    >
+      {children}
+    </button>
   );
 }

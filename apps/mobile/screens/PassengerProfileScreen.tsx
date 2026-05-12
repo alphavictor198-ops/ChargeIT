@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PassengerProfile } from '../lib/humanStateEngine';
 
@@ -13,8 +13,16 @@ const PROFILES: { id: PassengerProfile; label: string; icon: string; desc: strin
   { id: 'pet', label: 'Pet', icon: '🐕', desc: 'Dog, cat, etc.' },
 ];
 
+type ProfileParams = {
+  stationId?: string;
+  stationName?: string;
+};
+
 export default function PassengerProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const route = useRoute<RouteProp<{ params: ProfileParams }, 'params'>>();
+  const { stationId, stationName } = route.params || {};
+  
   const [selected, setSelected] = useState<Set<PassengerProfile>>(new Set(['solo']));
 
   const toggle = (id: PassengerProfile) => {
@@ -32,7 +40,16 @@ export default function PassengerProfileScreen() {
   };
 
   const handleContinue = () => {
-    navigation.navigate('RoutePlanner', { passengers: Array.from(selected) });
+    const passengers = Array.from(selected);
+    if (stationId) {
+      navigation.navigate('ActiveTrip', { 
+        passengers,
+        destinationId: stationId,
+        destinationName: stationName
+      });
+    } else {
+      navigation.navigate('RoutePlanner', { passengers });
+    }
   };
 
   return (

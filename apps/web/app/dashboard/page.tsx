@@ -4,12 +4,14 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { intelligenceApi } from "@/lib/api";
-import { Battery, Zap, AlertTriangle, TrendingUp, Link as LinkIcon } from "lucide-react";
+import { 
+  Battery, Zap, AlertTriangle, TrendingUp, 
+  Link as LinkIcon, Shield, Activity, Truck, Car, MapPin 
+} from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { VEHICLE_SPECS, computePowerKw, predictTripSegment } from "@/lib/physics";
 import dynamic from "next/dynamic";
-import { MapPin } from "lucide-react";
 
 const LocationServices = dynamic(() => import("@/components/dashboard/LocationServices"), { ssr: false });
 
@@ -178,7 +180,7 @@ export default function DashboardPage() {
                   Optimizer
                 </button>
               </Link>
-              <Link href="/active-trip" className="w-full">
+              <Link href="/passenger-profile" className="w-full">
                 <button className="w-full text-[10px] py-3 flex flex-col items-center justify-center gap-1.5 rounded-xl font-bold transition-all" 
                         style={{ minHeight: "80px", background: "rgba(255,107,26,0.1)", color: "#ff6b1a", border: "1px solid rgba(255,107,26,0.3)" }}>
                   <Zap className="w-4 h-4" />
@@ -196,6 +198,43 @@ export default function DashboardPage() {
             </h2>
             <div className="flex-1 min-h-[300px]">
               <LocationServices />
+            </div>
+          </div>
+        </div>
+
+        {/* ─ Enterprise & AI Suite ────────────────────────────── */}
+        <div className="mt-8">
+          <h2 className="text-xl font-black text-white mb-6 tracking-tight flex items-center gap-2">
+            <Shield className="w-6 h-6 text-[#00ff9d]" /> Enterprise Intelligence Suite
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Link href="/admin">
+              <div className="glass-card p-6 bg-white/[0.03] border-white/5 rounded-2xl border hover:bg-white/[0.05] transition-all group cursor-pointer h-full">
+                <div className="p-3 bg-[#00ff9d]/10 rounded-xl w-fit mb-4 text-[#00ff9d]">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white group-hover:text-[#00ff9d] transition-colors">CPO Admin Panel</h3>
+                <p className="text-sm text-slate-400 mt-2">Manage charging infrastructure, pricing models, and hardware health via OCPP.</p>
+              </div>
+            </Link>
+
+            <Link href="/fleet">
+              <div className="glass-card p-6 bg-white/[0.03] border-white/5 rounded-2xl border hover:bg-white/[0.05] transition-all group cursor-pointer h-full">
+                <div className="p-3 bg-[#ff6b1a]/10 rounded-xl w-fit mb-4 text-[#ff6b1a]">
+                  <Truck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white group-hover:text-[#ff6b1a] transition-colors">Fleet Management</h3>
+                <p className="text-sm text-slate-400 mt-2">Monitor multi-vehicle telemetry, driver HSS safety scores, and logistical efficiency.</p>
+              </div>
+            </Link>
+
+            <div className="glass-card p-6 bg-white/[0.03] border-white/5 rounded-2xl border opacity-80 h-full relative overflow-hidden">
+               <div className="absolute top-0 right-0 bg-[#8b5cf6]/20 text-[#8b5cf6] px-3 py-1 text-[10px] font-black uppercase rounded-bl-lg">Simulated</div>
+                <div className="p-3 bg-[#8b5cf6]/10 rounded-xl w-fit mb-4 text-[#8b5cf6]">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white">AI Demand Forecast</h3>
+                <p className="text-sm text-slate-400 mt-2">Predictive heatmaps and grid-load balancing suggestions for future-ready infrastructure.</p>
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import RoutePlannerScreen from './screens/RoutePlannerScreen';
 import PassengerProfileScreen from './screens/PassengerProfileScreen';
 import ActiveTripScreen from './screens/ActiveTripScreen';
 import TripSummaryScreen from './screens/TripSummaryScreen';
+import BookingScreen from './screens/BookingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +27,7 @@ export default function App() {
           <Stack.Screen name="PassengerProfile" component={PassengerProfileScreen} />
           <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
           <Stack.Screen name="TripSummary" component={TripSummaryScreen} />
+          <Stack.Screen name="Booking" component={BookingScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </VehicleProvider>

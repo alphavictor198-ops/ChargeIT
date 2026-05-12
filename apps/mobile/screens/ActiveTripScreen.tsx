@@ -13,13 +13,30 @@ import {
 import { CHARGING_HUBS } from '../lib/physics';
 import { useVehicle } from '../lib/VehicleContext';
 
-type RouteParams = { passengers: string[] };
+type RouteParams = { 
+  passengers: string[],
+  destinationId?: string,
+  destinationName?: string
+};
 
 export default function ActiveTripScreen() {
   const route = useRoute<RouteProp<{ ActiveTrip: RouteParams }, 'ActiveTrip'>>();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { spec, batteryPercent: initialBattery } = useVehicle();
-  const passengers = (route.params?.passengers || ['solo']) as PassengerProfile[];
+  const params = route.params || {};
+  const passengers = (params.passengers || ['solo']) as PassengerProfile[];
+  const { destinationId, destinationName } = params;
+
+  // Auto-launch Google Maps if destination is provided
+  useEffect(() => {
+    if (destinationId) {
+      const hub = CHARGING_HUBS.find((h, i) => i.toString() === destinationId);
+      if (hub) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${hub.lat},${hub.lng}&travelmode=driving`;
+        Linking.openURL(url);
+      }
+    }
+  }, [destinationId]);
 
   // ─── State ───────────────────────────────────────────────
   const [tripStartTime] = useState(Date.now());
@@ -51,6 +68,11 @@ export default function ActiveTripScreen() {
   const hasSpoken = useRef(false);
   const soundRef = useRef<Audio.Sound | null>(null);
   const warningAnim = useRef(new Animated.Value(0)).current;
+  const currentScoreRef = useRef(100);
+
+  useEffect(() => {
+    currentScoreRef.current = hssResult.score;
+  }, [hssResult.score]);
 
   // ─── Safety Beep & Vibration Controller ──────────────────
   const playWarningBeep = async () => {
@@ -83,9 +105,12 @@ export default function ActiveTripScreen() {
       // Stop both Audio and Vibration after 5 seconds
       setTimeout(async () => {
         Vibration.cancel();
+        console.log("[Safety] Vibration stopped.");
         if (soundRef.current) {
-          await soundRef.current.stopAsync();
-          await soundRef.current.unloadAsync();
+          try {
+            await soundRef.current.stopAsync();
+            await soundRef.current.unloadAsync();
+          } catch (e) {}
           soundRef.current = null;
         }
       }, 5000);
@@ -97,11 +122,11 @@ export default function ActiveTripScreen() {
   // ─── High-Fidelity Signal Processing ────────────────────
   const lastAccelZ = useRef(1.0);
   const lastAccelY = useRef(0.0);
-  const filterAlpha = 0.2; // 0.2 = heavy smoothing, 0.8 = high sensitivity
-
+  const filterAlpha = 0.15; // Increased smoothing to ignore hand-held jitter
+  
   // ─── Accelerometer Listener (Zero Latency) ────────────────
   useEffect(() => {
-    Accelerometer.setUpdateInterval(50); // Increased frequency (20Hz) for better precision
+    Accelerometer.setUpdateInterval(50); 
     const sub = Accelerometer.addListener(data => {
       // 1. Low-Pass Filter to ignore potholes/vibrations
       const filteredY = lastAccelY.current * (1 - filterAlpha) + data.y * filterAlpha;
@@ -114,28 +139,27 @@ export default function ActiveTripScreen() {
       accelSamples.current.push(Math.abs(filteredY));
       if (accelSamples.current.length > 200) accelSamples.current.shift();
 
-      // 2. Instant Hard Brake Detection (> 0.45g change after filtering)
+      // 2. High-Impact Braking Detection (> 0.85g after filtering)
       const brakeForce = Math.abs(filteredZ - 1.0);
-      if (brakeForce > 0.45) {
+      if (brakeForce > 0.85) {
         const now = Date.now();
         if (hardBrakeTimestamps.current.length === 0 || now - hardBrakeTimestamps.current[hardBrakeTimestamps.current.length - 1] > 6000) {
           hardBrakeCount.current++;
           hardBrakeTimestamps.current.push(now);
           
-          // ─── ZERO LATENCY ALERT (Audio Beep + Vibration) ───
-          Vibration.vibrate([0, 200, 100, 200]); 
-          playWarningBeep(); // 5-second mild beep
-          Speech.speak("Braking warning", { rate: 1.2 });
+          if (currentScoreRef.current < 80) {
+            Vibration.vibrate([0, 200, 100, 200]); 
+            playWarningBeep();
+            Speech.speak("Sudden braking detected", { rate: 1.2 });
+          }
         }
       }
 
-      // 3. Lateral Swerve Detection (Inappropriate Behavior)
-      if (Math.abs(filteredY) > 0.35) {
+      // 3. High-G Swerve Detection (> 0.65g)
+      if (Math.abs(filteredY) > 0.65) {
         const now = Date.now();
-        // Trigger if swerve is sustained or sharp
-        if (now % 5000 < 50) { // Throttle swerve alerts to every 5s
+        if (now % 5000 < 50 && currentScoreRef.current < 80) { 
           playWarningBeep();
-          Vibration.vibrate(200);
         }
       }
 
@@ -145,7 +169,10 @@ export default function ActiveTripScreen() {
       hardBrakeCount.current = hardBrakeTimestamps.current.length;
     });
 
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      Vibration.cancel(); // Stop any pending vibration on unmount
+    };
   }, []);
 
   // ─── Main Logic Loop — UI & HSS Updates ─────────────────
@@ -311,6 +338,20 @@ export default function ActiveTripScreen() {
             <Activity color="#44ffb2" size={24} style={{ marginRight: 10 }} />
             <Text style={styles.headerTitle}>GATI HUD</Text>
           </View>
+          {destinationId && (
+            <TouchableOpacity 
+              onPress={() => {
+                const hub = CHARGING_HUBS.find((h, i) => i.toString() === destinationId);
+                if (hub) {
+                  const url = `https://www.google.com/maps/dir/?api=1&destination=${hub.lat},${hub.lng}&travelmode=driving`;
+                  Linking.openURL(url);
+                }
+              }} 
+              style={styles.resumeNavBtn}
+            >
+              <Text style={styles.resumeNavText}>RESUME MAPS</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity 
             onPress={() => {
               Alert.alert(
@@ -463,6 +504,8 @@ const styles = StyleSheet.create({
   header: { paddingTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: 2 },
+  resumeNavBtn: { backgroundColor: 'rgba(68, 255, 178, 0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#44ffb2', marginRight: 10 },
+  resumeNavText: { color: '#44ffb2', fontWeight: 'bold', fontSize: 10 },
   endTripBtn: { backgroundColor: 'rgba(255, 68, 85, 0.2)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ff4455' },
   endTripText: { color: '#ff4455', fontWeight: 'bold', fontSize: 12 },
 
